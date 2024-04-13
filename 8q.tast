@@ -1,0 +1,111 @@
+Prog([
+     , (* const N = 8 *)
+       ConstDecl(N, IntType, IntExp(8))
+
+       (* type boolArray [] bool *)
+     , TypeDecl(boolArray, ArrayType(BoolType))
+
+       (* type intArray [] int *)
+     , TypeDecl(intArray, ArrayType(IntType))
+
+       (* var row boolArray = [N] bool *)
+     , VarDecl([ (row, NameType(boolArray), NilExp)])
+       (* _allocate_ *)
+     , AssignStmt([SimpleVar(boolArray, row)], [NewExp(bool, SimpleVar(IntType, N))])
+       (* _initialize with zero value using loop over internal variable_ *)
+       (* _scope variable *)
+     , Scope([ VarDecl(%init0, IntType, IntExp(0))
+             , ForStmt(OpExp(SimpleVar(IntType, %init0), IntLtOp, SimpleVar(IntType, N))
+	             (* _loop body_ *)
+	             , Scope([ Scope ([ AssignStmt(SubScriptVar(SimpleVar(boolArray, row), IntExp(SimpleVar(IntType, %init0))), BoolExp(false))])
+		     (* _continue scope_ *)
+		     , AssignStmt([(SimpleVar(IntType, %init0))], [OpExp(SimpleVar(IntType, %init0), PlusOp, IntExp(1))])]))])
+
+       (* var col intArray = [N] int { } *)
+     , VarDecl([ (col, NameType(intArray), NilExp)])
+     , AssignStmt(SimpleVar(intArray, col)], [NewExp(int, SimpleVar(IntType, N))]
+     , Scope([ VarDecl(%init1, IntType, IntExp(0))
+             , ForStmt(OpExp(SimpleVar(IntType, %init1), IntLtOp, SimpleVar(IntType, N))
+	             , Scope([ Scope ([ AssignStmt(SubScriptVar(SimpleVar(NameType(intArray), col), IntExp(SimpleVar(IntType, %init1))), IntExp(0))])
+		     , AssignStmt([(SimpleVar(IntType, %init1))], [OpExp(SimpleVar(IntType, %init1), PlusOp, IntExp(1))])]))])
+
+       (* var diag1 boolArray = [N+N-1]bool { false } *)
+     , VarDecl([ (diag1, NameType(boolArray), NilExp)])
+     , AssignStmt([SimpleVar(boolArray, diag1)], [NewExp(bool, OpExp(OpExp(VarExp(IntType, SimpleVar(N)),PlusOp,VarExp(IntType, SimpleVar(N))),MinusOp,IntExp(1)))])
+       (* one initializer given, rest set to zero-value *)
+     , AssignStmt(SubScriptVar(SimpleVar(boolArray, row), IntExp(0)), BoolExp(false))
+     , Scope([ VarDecl(%init2, IntType, IntExp(1))
+             , ForStmt(OpExp(SimpleVar(IntType, %init2), IntLtOp, OpExp(OpExp(VarExp(IntType, SimpleVar(N)),PlusOp,VarExp(IntType, SimpleVar(N))),MinusOp,IntExp(1)))
+                       (* _continue scope _*)
+	             , Scope([ (* loop body *)
+                               Scope ([ AssignStmt(SubScriptVar(SimpleVar(boolArray, row), IntExp(SimpleVar(IntType, %init2))), BoolExp(false))])
+		             , AssignStmt([(SimpleVar(IntType, %init2))], [OpExp(SimpleVar(IntType, %init2), PlusOp, IntExp(1))])]))])
+
+       (* var diag2 boolArray = [N+N-1]bool { false, false } *)
+     , VarDecl([ (diag2, NameType(boolArray), NilExp)])
+     , AssignStmt([SimpleVar(boolArray, diag2)], [NewExp(bool, OpExp(OpExp(VarExp(IntType, SimpleVar(N)),PlusOp,VarExp(IntType, SimpleVar(IntType, N))),MinusOp,IntExp(1)))])
+       (* two initializers given, rest set to zero-value *)
+     , AssignStmt(SubScriptVar(SimpleVar(boolArray, row), IntExp(0)), BoolExp(false))
+     , Scope([ VarDecl(%init2, IntType, IntExp(2))
+             , ForStmt(OpExp(SimpleVar(IntType, %init2), IntLtOp, OpExp(OpExp(VarExp(IntType, SimpleVar(IntType, N)),PlusOp,VarExp(IntType, SimpleVar(IntType, N))),MinusOp,IntExp(1)))
+	             , Scope([ Scope ([ AssignStmt(SubScriptVar(SimpleVar(boolArray, row), IntExp(SimpleVar(IntType, %init2))), BoolExp(false))])
+		     , AssignStmt([(SimpleVar(IntType, %init2))], [OpExp(SimpleVar(IntType, %init2), PlusOp, IntExp(1))])]))])
+
+       (* func printBoard() { *)
+     , FunDecl( printBoard,[],[]
+          (* for i:=0; i<N; i=i+1 { *)
+          (* _hoist stmt out of `for'_ *)
+          , Scope ([ VarDecl([(i, IntType), IntExp(0)])
+	          , ForStmt( OpExp(VarExp(SimpleVar(IntType, i)), IntLtOp, VarExp(SimpleVar(IntType, N))),
+                           , Scope ([
+  		                    (* for j:=0; j<N; j=j+1 { *)
+                      , Scope ([ VarDecl([(j, IntType), IntExp(0)])
+                         , ForStmt( OpExp(VarExp(SimpleVar(IntType, j)), IntLtOp, VarExp(SimpleVar(IntType, N))),
+                                      , Scope ([ (* if (col[i]==j) *)
+                                        , Scope ([ IfElseStmt(SubScriptVar(SimpleVar(NameType(intArray), col), IntEqOp, SimpleVar(IntType, j)),
+                                           (* { write("O") } *)
+                                           , Scope([ CallStmt(write, [(StringType, StringExp("O"))]) ])
+                                           (* else { write(".") } *)
+                                           , Scope([ CallStmt(write, [(StringType, StringExp("."))]) ])) ])]))
+                                         , CallStmt(write, [(StringType, StringExp("\n"))]) ])]))
+              , CallStmt(write, [(StringType, StringExp("\n"))]) ]))
+
+   (* func try (c int) { *)
+  , FunDecl( try, [(IntType, c)],[]
+
+      , Scope ([ (* if (c==N) *)
+         IfElseStmt( OpExp(SimpleVar(IntType, c), IntEqOp, SimpleVar(IntType, N))
+             (* { printBoard() } *)
+           , Scope ([ CallStmt(printBoard, []) ])
+             (* } else { *) 
+           , Scope ([ Scope ([ (* r := 0 *)
+               VarDecl([(r, IntType), IntExp(0)])
+               (* for ... r < N ... { *)
+             , ForStmt( OpExp(SimpleVar(IntType, r), IntLtOp, SimpleVar(IntType, N))
+                , Scope ([ Scope ([ (* if !row[r] && !diag1[r+c] && !diag2[r+7-c] *)
+                   (* _rewrite AndOp to multiple IfStmt *)
+                    , IfElseStmt ( SubScriptVar(SimpleVar(NamedType(boolArray), row), SimpleVar(IntType, r))
+                       , Scope ([])
+                       , IfElseStmt ( SubScriptVar(SimpleVar(NamedType(boolArray), diag1), OpExp(SimpleVar(IntType, r), PlusOp, SimpleVar(IntType, c)))
+                            , Scope ([])
+                            
+                          , IfElseStmt ( SubScriptVar(SimpleVar(NamedType(boolArray), diag2), OpExp(OpExp(SimpleVar(IntType, r), PlusOp, IntExp(7), MinusOp, SimpleVar(IntType, c)))),
+                             , Scope ([])
+                             , Scope ([ (* row[r], diag1[r+c], diag2[r+7-c] = true, true, true *)
+                                  AssignStmt([ SubScriptVar(SimpleVar(boolArray, row),   SimpleVar(IntType, r))
+                                    , SubScriptVar(SimpleVar(NamedType(boolArray), diag1), OpExp(SimpleVar(IntType, r), PlusOp, SimpleVar(IntType, c)))
+                                    , SubScriptVar(SimpleVar(NamedType(boolArray), diag2), OpExp(OpExp(SimpleVar(IntType, r), PlusOp, IntExp(7), MinusOp, SimpleVar(IntType, c))))]
+                                  , [ BoolExp(true), BoolExp(true), BoolExp(true) ])
+                               
+                                , AssignStmt([SubScriptVar(SimpleVar(NamedType(intArray), col), SimpleVar(IntType, c))], [SimpleVar(IntType, r)])
+                                , CallExp(try, OpExp(SimpleVar(IntType, c), PlusOp, IntExp(1)))
+
+                                , AssignStmt([ SubScriptVar(SimpleVar(boolArray, row),   SimpleVar(IntType, r))
+                                    , SubScriptVar(SimpleVar(NamedType(boolArray), diag1), OpExp(SimpleVar(IntType, r), PlusOp, SimpleVar(IntType, c)))
+                                    , SubScriptVar(SimpleVar(NamedType(boolArray), diag2), OpExp(OpExp(SimpleVar(IntType, r), PlusOp, IntExp(7), MinusOp, SimpleVar(IntType, c))))]
+                                  , [ BoolExp(false), BoolExp(false), BoolExp(false) ])]))))])
+                             (* ... r=r+1 ... *)
+                             , AssignStmt([SimpleVar(IntType, r), [OpExp(SimpleVar(IntType, r) PlusOp, IntExp(1))]]) ]))])]))]))
+
+     , (* { try(0) } *)
+       Scope ([ CallStmt(try,[IntExp(0)])])])
