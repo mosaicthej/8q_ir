@@ -347,4 +347,14 @@ let ircode: ircode = [
     (* so I treat main as a function *)
     LABEL(label "_end");
   ]) (* end irmain *)
+  (* assuming all in IRMAIN are visible *)
+
+  (* func main ()->() *)
+  (* Base: func main ()->() *)
+  (* There is no tabsyn decl for main *)
+  IRFUNC(label "_func_main", [
+    (* Base: try(0) *)
+      [LABEL(label "_main");
+        CALL(label "_func_try", [temp "ZERO"], []);]
+      ]); (* end irmain *)
 ] (* end ircode *)
