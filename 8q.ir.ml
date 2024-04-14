@@ -52,28 +52,28 @@ type ircode = frag list
 (* do things now *)
 let ircode: ircode = [
   (* func printBoard ()->() *)
-  IRFUNC(label "_func_printBoard", []),
+  IRFUNC(label "_func_printBoard", []);
 
   (* func try (c int) -> () *)
-  IRFUNC(label "_func_try", []),
+  IRFUNC(label "_func_try", []);
 
 
   IRMAIN([
 
-    [ LABEL(label "_start"),
+    (label "_start",
       [ (* bb start start *)
-        MOVE(temp "ZERO", CONST(0)), (* const 0 *)
-        MOVE(temp "ONE", CONST(1)), (* const 1 *)
-        MOVE(temp "TWO", CONST(2)), (* const 2 *)
-        MOVE(temp "FOUR", CONST(4)), (* getting wordsize *)
+        MOVE(temp "ZERO", CONST(0)); (* const 0 *)
+        MOVE(temp "ONE", CONST(1)); (* const 1 *)
+        MOVE(temp "TWO", CONST(2)); (* const 2 *)
+        MOVE(temp "FOUR", CONST(4)); (* getting wordsize *)
         (* init global vals and vars. *)
         (* Base: const N = 8 *)
         (* Tabsyn: ConstDecl(N, IntType, IntExp(8)) *)
-        MOVE(temp "N", CONST(8)),
-        MOVE(temp "_arr_offset", CONST(8)), (* 8 bytes array header *)
+        MOVE(temp "N", CONST(8));
+        MOVE(temp "_arr_offset", CONST(8)); (* 8 bytes array header *)
         JUMP(label "_l_decl_row")
       ] (* bb start end *)
-    ],
+    );
   
     (* Base: type boolArray []boolean
              type intArray []int *)
@@ -88,22 +88,22 @@ let ircode: ircode = [
                 [NewExp(bool, SimpleVar(IntType, N))]) *)
     (* for allocation, assuming we have a library that does this,
        providing a size in bytes *)
-    [ LABEL(label "_l_decl_row"),
+    (label "_l_decl_row",
       [ (* bb l_decl_row start *)
         MOVE(temp "_alloc_row_size", 
-          BINOP(temp "N", PLUS, temp "_arr_offset")),
+          BINOP(temp "N", PLUS, temp "_arr_offset"));
         CALL(label "_alloc_",
         (* size is N x sizeof(bool) + 8 *)
           (* assume we knows that bool takes 1 byte *)
           [temp "_alloc_row_size"],
             (* assuming, like C, we have a special `errno` that takes 
           return from system library calls *)
-          [temp "row", temp "errno"]),
+          [temp "row", temp "errno"]);
         MOVE(temp "row_body", (* body of an array begin at 8 bytes *)
-          BINOP(temp "row", PLUS, temp "_arr_offset")),
+          BINOP(temp "row", PLUS, temp "_arr_offset"));
         JUMP(label "_l_init_row")
       ] (* bb l_decl_row end *)
-    ],
+    );
     (* now, we need to initialize the array (to the zero-val) *)
     (* Base: <sugar> *)
     (* Tabsyn: /*
@@ -114,76 +114,77 @@ let ircode: ircode = [
 		     (* _continue scope_ *)
 		     , AssignStmt([(SimpleVar(IntType, %init0))], [OpExp(SimpleVar(IntType, %init0), PlusOp, IntExp(1))])]))])
 */ *)
-    [ LABEL(label "_l_init_row"), (* like the `scope` in tabsyn *)
-      [ MOVE(temp "%init0", CONST(0)),
-        JUMP(label "_l_init_row_loop_head_0"),
+    (label "_l_init_row", (* like the `scope` in tabsyn *)
+      [ MOVE(temp "%init0", CONST(0));
+        JUMP(label "_l_init_row_loop_head_0");
       ] (* end of _l_init_row *)
-    ], 
+    );
       (* I'm going to rewrite a loop into 
         a do-while wrapped in if. Saves (n-1) instructions *)
-      [LABEL(label "_l_init_row_loop_head_0"),
+      (label "_l_init_row_loop_head_0",
         [ (* ite test *)
           MOVE(temp "_t_init_row_loop_test", 
-            ROP(temp "%init0", LT, temp "N")),
+            ROP(temp "%init0", LT, temp "N"));
           CJUMP(temp "_init_row_loop_test",
             label "_l_init_row_loop_body_0",
             label "_l_init_row_loop_end_0")
         ] (* end of _l_init_row_loop_head_0 *)
-      ],
+      );
 
 
 
-  [ LABEL(label "_l_init_row_loop_body_0"),
+  (label "_l_init_row_loop_body_0",
     [ (* bb l_init_row_loop_body_0 start *)
       (* row[i] <- false *)
       (* STORE of temp * temp is MOVE MEM[t1] <- t2 *)
       (* row[i] is at (row+8+i) *)
       MOVE(temp "_t_init_row_mem", 
-        BINOP(temp "row_body", PLUS, temp "%init0")),
+        BINOP(temp "row_body", PLUS, temp "%init0"));
       (* assuming we use 0 for false *)
-      STORE(temp "_t_init_row_mem", temp "ZERO"), (* ZERO is a const 0 *)
+      STORE(temp "_t_init_row_mem", temp "ZERO"); (* ZERO is a const 0 *)
       (* i++ *)
       MOVE(temp "%init0", 
-        BINOP(temp "%init0", PLUS, temp "ONE")),
+        BINOP(temp "%init0", PLUS, temp "ONE"));
       (* test again *)
       MOVE(TEMP "_t_init_row_loop_test", 
-        ROP(temp "%init0", LT, temp "N")),
+        ROP(temp "%init0", LT, temp "N"));
       CJUMP(temp "_init_row_loop_test",
         label "_l_init_row_loop_body_0",
-        label "_l_init_row_loop_end_0"),
+        label "_l_init_row_loop_end_0");
     ] (* bb l_init_row_loop_body_0 end *)
-  ],
+  );
   
-    [ LABEL(label "_l_init_row_loop_end_0"),
+    (label "_l_init_row_loop_end_0",
       [ (* bb l_init_row_loop_end_0 start *)
-        MOVE(temp "ZERO", BINOP(temp "ZERO", OR, temp "ZERO")),
+        MOVE(temp "ZERO", BINOP(temp "ZERO", OR, temp "ZERO"));
         JUMP(label "_l_decl_col")
       ] (* bb l_init_row_loop_end_0 end *)
-    ],
+    );
         
 
     (* very cool, now do the same thing for col *)
     (* Base: var col intArray = [N]int *)
     (* Tabsyn: 
-     , VarDecl([ (col, NameType(intArray), NilExp)])
+     , VarDecl([ (col, NameType(intArray); NilExp)])
      , AssignStmt([SimpleVar(intArray, col)], [NewExp(int, SimpleVar(IntType, N))] *)
 
-    [ LABEL(label "_l_decl_col"),
+    (label "_l_decl_col",
       [ (* bb l_decl_col start *)
         MOVE(temp "_alloc_col_body_bytes",
-          BINOP(temp "N", SHL, temp "TWO")),
+          BINOP(temp "N", SHL, temp "TWO"));
         MOVE(temp "_alloc_col_size", 
-          BINOP(temp "_arr_offset", PLUS, temp "_alloc_col_body_bytes")),
+          BINOP(temp "_arr_offset", PLUS, temp "_alloc_col_body_bytes"));
         CALL(label "_alloc_",
             (* size is N x sizeof(int) + 8 *)
               (* assume we knows that int takes 4 byte *)
               [temp "_alloc_col_size"]
-              [temp "col", temp "errno"]),
+              [temp "col", temp "errno"]);
         MOVE(temp "col_body", (* body of an array begin at 8 bytes *)
-          BINOP(temp "col", PLUS, temp "_arr_offset")),
+          BINOP(temp "col", PLUS, temp "_arr_offset"));
         JUMP(label "_l_init_col")
       ] (* bb l_decl_col end *)
-    ],
+    );
+
 
     (* now, we need to initialize the array (to the zero-val) *)
     (* Tabsyn: /*
@@ -192,89 +193,89 @@ let ircode: ircode = [
 	             , Scope([ Scope ([ AssignStmt(SubScriptVar(SimpleVar(NameType(intArray), col), IntExp(SimpleVar(IntType, %init1))), IntExp(0))])
 		     , AssignStmt([(SimpleVar(IntType, %init1))], [OpExp(SimpleVar(IntType, %init1), PlusOp, IntExp(1))])]))])
 */ *)
-    [ LABEL(label "_l_init_col"),
+    (label "_l_init_col",
       [ (* bb l_init_col start *)
-        MOVE(temp "%init1", CONST(0)),
+        MOVE(temp "%init1", CONST(0));
         JUMP(label "_l_init_col_loop_head_0")
       ] (* bb l_init_col end *)
-    ],
+    );
 
-      [ LABEL(label "_l_init_col_loop_head_0"),
+      (label "_l_init_col_loop_head_0",
         [ (* bb l_init_col_loop_head_0 start *)
           MOVE(temp "_t_init_col_loop_test", 
-            ROP(temp "%init1", LT, temp "N")),
+            ROP(temp "%init1", LT, temp "N"));
           CJUMP(temp "_init_col_loop_test",
             label "_l_init_col_loop_body_0",
             label "_l_init_col_loop_end_0")
         ] (* bb l_init_col_loop_head_0 end *)
-      ],
+    );
 
-      [ LABEL(label "_l_init_col_loop_body_0"),
+      (label "_l_init_col_loop_body_0",
         [ (* bb l_init_col_loop_body_0 start *)
           MOVE(temp "_t_init_col_offset",
-            BINOP(temp "%init1", SHL, temp "TWO")),
+            BINOP(temp "%init1", SHL, temp "TWO"));
           MOVE(temp "_t_init_col_mem", 
-            BINOP(temp "col_body", PLUS, temp "_t_init_col_offset")),
-          STORE(temp "_t_init_col_mem", temp "ZERO"),
+            BINOP(temp "col_body", PLUS, temp "_t_init_col_offset"));
+          STORE(temp "_t_init_col_mem", temp "ZERO");
           MOVE(temp "%init1", 
-            BINOP(temp "%init1", PLUS, temp "ONE")),
+            BINOP(temp "%init1", PLUS, temp "ONE"));
           MOVE(TEMP "_t_init_col_loop_test", 
-            ROP(temp "%init1", LT, temp "N")),
+            ROP(temp "%init1", LT, temp "N"));
           CJUMP(temp "_init_col_loop_test",
             label "_l_init_col_loop_body_0",
             label "_l_init_col_loop_end_0")
         ] (* bb l_init_col_loop_body_0 end *)
-      ],
+    );
 
-      [ LABEL(label "_l_init_col_loop_end_0"),
+      (label "_l_init_col_loop_end_0",
         [ (* bb l_init_col_loop_end_0 start *)
-          MOVE(temp "ZERO", BINOP(temp "ZERO", OR, temp "ZERO")),
+          MOVE(temp "ZERO", BINOP(temp "ZERO", OR, temp "ZERO"));
           JUMP(label "_decl_diag1_setup")
         ] (* bb l_init_col_loop_end_0 end *)
-      ],
+    );
 
     (* do diag1 now. *)
     (* Base: var diag1 boolArray = [N+N-1]boolean *)
     (* Tabsyn: , VarDecl([ (diag1, NameType(boolArray), NilExp)])
                , AssignStmt([SimpleVar(boolArray, diag1)], [NewExp(bool, OpExp(OpExp(VarExp(IntType, SimpleVar(N)),PlusOp,VarExp(IntType, SimpleVar(N))),MinusOp,IntExp(1)))])
       *)
-    [ LABEL(label "_l_decl_diag1_setup"),
+    (label "_l_decl_diag1_setup",
       [ (* bb l_decl_diag1_setup start *)
-        MOVE(temp "_t_diag_len_2n", BINOP(temp "N", PLUS, temp "N")),
+        MOVE(temp "_t_diag_len_2n", BINOP(temp "N", PLUS, temp "N"));
         MOVE(temp "_t_diag_len", 
-          BINOP(temp "_t_diag_len_2n", MINUS, temp "ONE")),
+          BINOP(temp "_t_diag_len_2n", MINUS, temp "ONE"));
         (* get 2n-1 *)
         MOVE(temo "_alloc_diag1_size", 
-          BINOP(temp "_t_diag_len", ADD, temp "_arr_offset")), (* 8 bytes array header *)
+          BINOP(temp "_t_diag_len", ADD, temp "_arr_offset")); (* 8 bytes array header *)
         JUMP(label "_l_decl_diag1")
       ] (* bb l_decl_diag1_setup end *)
-    ],
+    );
 
-    [ LABEL(label "_l_decl_diag1"),
+    (label "_l_decl_diag1",
       [ (* bb l_decl_diag1 start *)
         CALL(label "_alloc_",
       (* size is (2n-1) x sizeof(bool) + 8 *)
       (* assume we knows that bool takes 1 byte *)
           [temp "_alloc_diag1_size"]
-          [temp "diag1", temp "errno"]),
+          [temp "diag1", temp "errno"]);
         MOVE(temp "diag1_body", (* body of an array begin at 8 bytes *)
-          BINOP(temp "diag1", PLUS, temp "_arr_offset")),
+          BINOP(temp "diag1", PLUS, temp "_arr_offset"));
         JUMP(label "_l_init_diag1")
       ] (* bb l_decl_diag1 end *)
-    ],
+    );
           (* now, we need to initialize the array (to the zero-val) *)
           (* Tabsyn: /*
  , Scope(
     [ VarDecl(%init2, IntType, IntExp(1)) (* %init2 is i *)
     , ForStmt(
         OpExp(
-          SimpleVar(IntType, %init2), 
+          SimpleVar(IntType, %init2); 
           IntLtOp, 
           OpExp(
             OpExp(
-              VarExp(IntType, SimpleVar(N)),
+              VarExp(IntType, SimpleVar(N));
               PlusOp,
-              VarExp(IntType, SimpleVar(N))),
+              VarExp(IntType, SimpleVar(N)));
             MinusOp,
             IntExp(1))) (* N+N-1 *)
         (* _continue scope _*)
@@ -282,181 +283,181 @@ let ircode: ircode = [
           Scope([
             AssignStmt( (* A <- B*)
               SubScriptVar( (* A is row[i] *)
-                SimpleVar(boolArray, row), 
-                IntExp(SimpleVar(IntType, %init2))), 
+                SimpleVar(boolArray, row); 
+                IntExp(SimpleVar(IntType, %init2))); 
               BoolExp(false))]) (* row[i] <- false *)
         , AssignStmt( (* A <- B *)
             [(SimpleVar(IntType, %init2))], (* A is i *)
             [OpExp(
-              SimpleVar(IntType, %init2), 
+              SimpleVar(IntType, %init2); 
               PlusOp, 
               IntExp(1))])]))]) (* i <- i+1 *)
     */ *)
-    [ LABEL(label "_l_init_diag1"),
+    (label "_l_init_diag1",
       [ (* bb l_init_diag1 start *)
-        MOVE(temp "%init2", CONST(0)),
+        MOVE(temp "%init2", CONST(0));
         JUMP(label "_l_init_diag1_loop_head_0")
       ] (* bb l_init_diag1 end *)
-    ],
+    );
 
-    [ LABEL(label "_l_init_diag1_loop_head_0"),
+    (label "_l_init_diag1_loop_head_0",
       [ (* bb l_init_diag1_loop_head_0 start *)
         MOVE(temp "_t_init_diag1_loop_test", 
-          ROP(temp "%init2", LT, temp "_t_diag_len")),
+          ROP(temp "%init2", LT, temp "_t_diag_len"));
         CJUMP(temp "_init_diag1_loop_test",
           label "_l_init_diag1_loop_body_0",
           label "_l_init_diag1_loop_end_0")
       ] (* bb l_init_diag1_loop_head_0 end *)
-    ],
+    );
 
-    [ LABEL(label "_l_init_diag1_loop_body_0"),
+    (label "_l_init_diag1_loop_body_0",
       [ (* bb l_init_diag1_loop_body_0 start *)
         MOVE(temp "_t_init_diag1_mem", 
-          BINOP(temp "diag1_body", PLUS, temp "%init2")),
-        STORE(temp "_t_init_diag1_mem", temp "ZERO"),
+          BINOP(temp "diag1_body", PLUS, temp "%init2"));
+        STORE(temp "_t_init_diag1_mem", temp "ZERO");
         MOVE(temp "%init2", 
-          BINOP(temp "%init2", PLUS, temp "ONE")),
+          BINOP(temp "%init2", PLUS, temp "ONE"));
         MOVE(TEMP "_t_init_diag1_loop_test", 
-          ROP(temp "%init2", LT, temp "_t_diag_len")),
+          ROP(temp "%init2", LT, temp "_t_diag_len"));
         CJUMP(temp "_init_diag1_loop_test",
           label "_l_init_diag1_loop_body_0",
           label "_l_init_diag1_loop_end_0")
       ] (* bb l_init_diag1_loop_body_0 end *)
-    ],
+    );
 
-    [ LABEL(label "_l_init_diag1_loop_end_0"),
+    (label "_l_init_diag1_loop_end_0",
         [ (* bb l_init_diag1_loop_end_0 start *)
-          MOVE(temp "ZERO", BINOP(temp "ZERO", OR, temp "ZERO")),
+          MOVE(temp "ZERO", BINOP(temp "ZERO", OR, temp "ZERO"));
           JUMP(label "_decl_diag2_setup")
         ] (* bb l_init_diag1_loop_end_0 end *)
-    ],
+    );
     (* nearly same way, do diag2 *)
     (* Base: var diag2 boolArray = [N+N-1]boolean *)
     (* Tabsyn: /*
- , VarDecl([ (diag2, NameType(boolArray), NilExp)]) (* diag2 init to nil *)
+ , VarDecl([ (diag2, NameType(boolArray); NilExp)]) (* diag2 init to nil *)
  , AssignStmt(
     [SimpleVar(boolArray, diag2)], (* diag2 to alloc_B *)
     [NewExp(bool, (* alloc bool with length *)
       OpExp( (* (N+N)-1 *)
         OpExp(
-          VarExp(IntType, SimpleVar(N)),
+          VarExp(IntType, SimpleVar(N));
           PlusOp,
-          VarExp(IntType, SimpleVar(IntType, N))),
+          VarExp(IntType, SimpleVar(IntType, N)));
         MinusOp,
       IntExp(1)))])
 */ *)
-  [ LABEL(label "_decl_diag2_setup"),
+  (label "_decl_diag2_setup",
     [ (* bb l_decl_diag2_setup start *)
-      MOVE(temp "_t_diag2_len_2n", BINOP(temp "N", PLUS, temp "N")),
+      MOVE(temp "_t_diag2_len_2n", BINOP(temp "N", PLUS, temp "N"));
       MOVE(temp "_t_diag2_len", 
-        BINOP(temp "_t_diag2_len_2n", MINUS, temp "ONE")),
+        BINOP(temp "_t_diag2_len_2n", MINUS, temp "ONE"));
       MOVE(temp "_alloc_diag2_size", 
-        BINOP(temp "_t_diag2_len", ADD, temp "_arr_offset")), (* 8 bytes array header *)
+        BINOP(temp "_t_diag2_len", ADD, temp "_arr_offset")); (* 8 bytes array header *)
       JUMP(label "_l_decl_diag2")
     ] (* bb l_decl_diag2_setup end *)
-  ],
+  );
  
-  [ LABEL(label "_l_decl_diag2"),
+  (label "_l_decl_diag2",
     [ (* bb l_decl_diag2 start *)
       CALL(label "_alloc_",
         (* size is (2n-1) x sizeof(bool) + 8 *)
         (* assume we knows that bool takes 1 byte *)
         [temp "_alloc_diag2_size"]
-        [temp "diag2", temp "errno"]),
+        [temp "diag2", temp "errno"]);
       MOVE(temp "diag2_body", (* body of an array begin at 8 bytes *)
-        BINOP(temp "diag2", PLUS, temp "_arr_offset")),
+        BINOP(temp "diag2", PLUS, temp "_arr_offset"));
       JUMP(label "_l_init_diag2")
     ] (* bb l_decl_diag2 end *)
-  ],
+  );
       (* now, we need to initialize the array (to the zero-val) *)
       (* Tabsyn: /*
  , AssignStmt(
     SubScriptVar( 
-      SimpleVar(boolArray, row), 
-      IntExp(0)), 
+      SimpleVar(boolArray, row); 
+      IntExp(0)); 
     BoolExp(false))
  , Scope([ 
     VarDecl(%init2, IntType, IntExp(2)) 
   , ForStmt(
       OpExp( (* For i < N+N-1 *)
-        SimpleVar(IntType, %init2), 
+        SimpleVar(IntType, %init2); 
         IntLtOp, 
         OpExp( (* N+N-1 *)
           OpExp(
-            VarExp(IntType, SimpleVar(IntType, N)),
+            VarExp(IntType, SimpleVar(IntType, N));
             PlusOp,
-            VarExp(IntType, SimpleVar(IntType, N))),
+            VarExp(IntType, SimpleVar(IntType, N)));
           MinusOp,
           IntExp(1)))
     , Scope([ (* loop body *)
         Scope ([ (* loop body scope *)
           AssignStmt( (* A <- B *)
             SubScriptVar( (* A is row[i] *)
-              SimpleVar(boolArray, row), 
-              IntExp(SimpleVar(IntType, %init2))), 
+              SimpleVar(boolArray, row); 
+              IntExp(SimpleVar(IntType, %init2))); 
             BoolExp(false))]) (* row[i] <- false *) 
           (* continue scope *)
       , AssignStmt( (* A <- B *)
         [(SimpleVar(IntType, %init2))], (* A is i *)
         [OpExp(
-          SimpleVar(IntType, %init2), 
+          SimpleVar(IntType, %init2); 
           PlusOp, 
           IntExp(1))])]))]) (* i <- i+1 *)
 */ *)
-    [ LABEL(label "_l_init_diag2"),
+    (label "_l_init_diag2",
       [ (* bb l_init_diag2 start *)
-        MOVE(temp "%init2", CONST(0)),
+        MOVE(temp "%init2", CONST(0));
         JUMP(label "_init_diag2_loop_head_0")
       ] (* bb l_init_diag2 end *)
-    ],
+    );
 
-    [ LABEL(label "_init_diag2_loop_head_0"),
+    (label "_init_diag2_loop_head_0",
       [ (* bb l_init_diag2_loop_head_0 start *)
         MOVE(temp "_t_init_diag2_loop_test", 
-          ROP(temp "%init2", LT, temp "_t_diag2_len")),
+          ROP(temp "%init2", LT, temp "_t_diag2_len"));
         CJUMP(temp "_init_diag2_loop_test",
           label "_l_init_diag2_loop_body_0",
-          label "_l_init_diag2_loop_end_0"),
+          label "_l_init_diag2_loop_end_0");
       ] (* bb l_init_diag2_loop_head_0 end *)
-    ],
+    );
 
-    [ LABEL(label "_l_init_diag2_loop_body_0"),
+    (label "_l_init_diag2_loop_body_0",
       [ (* bb l_init_diag2_loop_body_0 start *)
         MOVE(temp "_t_init_diag2_mem", 
-          BINOP(temp "diag2_body", PLUS, temp "%init2")),
-        STORE(temp "_t_init_diag2_mem", temp "ZERO"),
+          BINOP(temp "diag2_body", PLUS, temp "%init2"));
+        STORE(temp "_t_init_diag2_mem", temp "ZERO");
         MOVE(temp "%init2", 
-          BINOP(temp "%init2", PLUS, temp "ONE")),
+          BINOP(temp "%init2", PLUS, temp "ONE"));
         MOVE(TEMP "_t_init_diag2_loop_test", 
-          ROP(temp "%init2", LT, temp "_t_diag2_len")),
+          ROP(temp "%init2", LT, temp "_t_diag2_len"));
         CJUMP(temp "_init_diag2_loop_test",
           label "_l_init_diag2_loop_body_0",
-          label "_l_init_diag2_loop_end_0"),
+          label "_l_init_diag2_loop_end_0");
       ] (* bb l_init_diag2_loop_body_0 end *)
-    ],
+    );
 
-    [ LABEL(label "_l_init_diag2_loop_end_0"),
+    (label "_l_init_diag2_loop_end_0",
       [ (* bb l_init_diag2_loop_end_0 start *)
-        MOVE(temp "ZERO", BINOP(temp "ZERO", OR, temp "ZERO")),
+        MOVE(temp "ZERO", BINOP(temp "ZERO", OR, temp "ZERO"));
         JUMP(label "_irmain_to_func_main")
       ] (* nop *)
-    ],
+    );
     
     (* now, we need to call the main function *)
-    [ LABEL(label "_irmain_to_func_main"),
+    (label "_irmain_to_func_main",
       [ (* bb start irmain_to_func_main *)
-        CALL(label "_func_main", [], []),
+        CALL(label "_func_main", [], []);
         JUMP(label "_end_irmain")
       ]
-    ], (* bb end irmain_to_func_main *)
+    ); (* bb end irmain_to_func_main *)
     (* end of main *)
     (* so I treat main as a function *)
-    [ LABEL(label "_end_irmain"),
+    (label "_end_irmain",
       [ (* bb end start *)
-        CALL (label "_sys_exit", [temp "ZERO"], []),
+        CALL (label "_sys_exit", [temp "ZERO"], []);
         (* no return, just exit *)
       ]
-    ] (* bb end end *)
+    ) (* bb end end *)
   ]) (* end irmain *)
   (* assuming all in IRMAIN are visible *)
 
@@ -465,20 +466,18 @@ let ircode: ircode = [
   (* There is no tabsyn decl for main *)
   IRFUNC(label "_func_main", [
     (* Base: try(0) *)
-    [LABEL(label "_main"),
+    (label "_main",
       [ (* bb start main *)
-        CALL(label "_func_try", [temp "ZERO"], []),
+        CALL(label "_func_try", [temp "ZERO"], []);
         JUMP(label "_end_main")
-      ],
-    ],
-
-    [LABEL(label " _end_main"),
-      [ (* bb end main *)
-        MOVE(temp "ZERO", BINOP(temp "ZERO", OR, temp "ZERO")),
-        JUMP(label "%__SECRET_INTERNAL_RET_DONT_SET_THIS_OR_YOU_WILL_BE_FIRED")
       ]
-    ] (* end main *)
+    );
 
-
-  ), (* end irmain *)
+    (label " _end_main",
+      [ (* bb end main *)
+        MOVE(temp "ZERO", BINOP(temp "ZERO", OR, temp "ZERO"));
+        JUMP(label "%__SECRET_INTERNAL_DONT_SET_THIS_OR_YOU_WILL_BE_FIRED")
+      ]
+    ) (* end main *)
+  ]); (* end irmain *)
 ] (* end ircode *)
