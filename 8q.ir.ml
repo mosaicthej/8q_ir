@@ -59,11 +59,15 @@ let ircode: ircode = [
 
 
   IRMAIN([
+    MOVE(temp "ZERO", CONST(0)); (* const 0 *)
+    MOVE(temp "ONE", CONST(1)); (* const 1 *)
+    MOVE(temp "TWO", CONST(2)); (* const 2 *)
     (* init global vals and vars. *)
     LABEL(label "_start");
     (* Base: const N = 8 *)
     (* Tabsyn: ConstDecl(N, IntType, IntExp(8)) *)
     MOVE(temp "N", CONST(8));
+    MOVE(temp "_arr_offset", CONST(8)); (* 8 bytes array header *)
   
     (* Base: type boolArray []boolean
              type intArray []int *)
@@ -79,10 +83,12 @@ let ircode: ircode = [
     (* for allocation, assuming we have a library that does this,
        providing a size in bytes *)
     LABEL(label "_decl_row");
+      MOVE(temp "_alloc_row_size", 
+        BINOP(temp "N", PLUS, temp "_arr_offset"));
       CALL(label "_alloc_",
         (* size is N x sizeof(bool) + 8 *)
           (* assume we knows that bool takes 1 byte *)
-          [BINOP(TEMP(temp "N"), PLUS, CONST(8))],
+          [temp "_alloc_row_size"]
             (* assuming, like C, we have a special `errno` that takes 
           return from system library calls *)
           [temp "row", temp "errno"]);
@@ -103,25 +109,25 @@ let ircode: ircode = [
       LABEL(label "_init_row_loop_head_0");
         (* ite test *)
         MOVE(temp "_t_init_row_loop_test", 
-          ROP(TEMP(temp "%init0"), LT, TEMP(temp "N")));
-        CJUMP(TEMP(temp "_init_row_loop_test"),
+          ROP(temp "%init0", LT, TEMP(temp "N")));
+        CJUMP(temp "_init_row_loop_test",
           label "_l_init_row_loop_body_0",
           label "_l_init_row_loop_end_0");
         LABEL(label "_l_init_row_loop_body_0");
           (* row[i] <- false *)
           (* STORE of temp * temp is MOVE MEM[t1] <- t2 *)
           (* row[i] is at (row+8+i) *)
-          MOVE(TEMP(temp "_t_init_row_mem"), 
-            BINOP(TEMP(temp "row"), PLUS, TEMP(temp "%init0")));
+          MOVE(temp "_t_init_row_mem", 
+            BINOP(temp "row", PLUS, temp "%init0"));
           (* assuming we use 0 for false *)
-          STORE(TEMP(temp "_t_init_row_mem"), CONST(0));
+          STORE(temp "_t_init_row_mem", temp "ZERO"); (* ZERO is a const 0 *)
           (* i++ *)
-          MOVE(TEMP(temp "%init0"), 
-            BINOP(TEMP(temp "%init0"), PLUS, CONST(1)));
+          MOVE(temp "%init0", 
+            BINOP(temp "%init0", PLUS, temp "ONE"));
           (* test again *)
           MOVE(TEMP "_t_init_row_loop_test", 
-            ROP(TEMP(temp "%init0"), LT, TEMP(temp "N")));
-          CJUMP(TEMP(temp "_init_row_loop_test"),
+            ROP(temp "%init0", LT, temp "N"));
+          CJUMP(temp "_init_row_loop_test",
             label "_l_init_row_loop_body_0",
             label "_l_init_row_loop_end_0");
         LABEL(label "_l_init_row_loop_end_0");
