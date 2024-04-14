@@ -465,8 +465,20 @@ let ircode: ircode = [
   (* There is no tabsyn decl for main *)
   IRFUNC(label "_func_main", [
     (* Base: try(0) *)
-      [LABEL(label "_main"),
+    [LABEL(label "_main"),
+      [ (* bb start main *)
         CALL(label "_func_try", [temp "ZERO"], []),
+        JUMP(label "_end_main")
+      ],
+    ],
+
+    [LABEL(label " _end_main"),
+      [ (* bb end main *)
+        MOVE(temp "ZERO", BINOP(temp "ZERO", OR, temp "ZERO")),
+        JUMP(label "%__SECRET_INTERNAL_RET_DONT_SET_THIS_OR_YOU_WILL_BE_FIRED")
       ]
-    ]), (* end irmain *)
+    ] (* end main *)
+
+
+  ), (* end irmain *)
 ] (* end ircode *)
