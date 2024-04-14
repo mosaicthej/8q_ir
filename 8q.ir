@@ -490,9 +490,14 @@ let ircode: ircode = [
 
   (* func printBoard ()->() *)
   IRFUNC(label "_func_printBoard", [
+    (* Base: for i=0; i<N ; i=i+1 *)
+    (* First, init the i, test and link *)
+    (label "_f_pb_loop_outer_0"
+      [
+        MOVE(temp "_t_i_pb_0", CONST(0));
+        
+
     
-
-
   ]);
 
   (* func try (c int) -> () *)
