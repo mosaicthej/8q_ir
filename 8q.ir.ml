@@ -62,6 +62,7 @@ let ircode: ircode = [
     MOVE(temp "ZERO", CONST(0)); (* const 0 *)
     MOVE(temp "ONE", CONST(1)); (* const 1 *)
     MOVE(temp "TWO", CONST(2)); (* const 2 *)
+    MOVE(temp "FOUR", CONST(4)); (* getting wordsize *)
     (* init global vals and vars. *)
     LABEL(label "_start");
     (* Base: const N = 8 *)
@@ -92,6 +93,8 @@ let ircode: ircode = [
             (* assuming, like C, we have a special `errno` that takes 
           return from system library calls *)
           [temp "row", temp "errno"]);
+      MOVE(temp "row_body", (* body of an array begin at 8 bytes *)
+        BINOP(temp "row", PLUS, temp "_arr_offset"));
     (* now, we need to initialize the array (to the zero-val) *)
     (* Base: <sugar> *)
     (* Tabsyn: /*
@@ -109,7 +112,7 @@ let ircode: ircode = [
       LABEL(label "_init_row_loop_head_0");
         (* ite test *)
         MOVE(temp "_t_init_row_loop_test", 
-          ROP(temp "%init0", LT, TEMP(temp "N")));
+          ROP(temp "%init0", LT, temp "N"));
         CJUMP(temp "_init_row_loop_test",
           label "_l_init_row_loop_body_0",
           label "_l_init_row_loop_end_0");
@@ -118,7 +121,7 @@ let ircode: ircode = [
           (* STORE of temp * temp is MOVE MEM[t1] <- t2 *)
           (* row[i] is at (row+8+i) *)
           MOVE(temp "_t_init_row_mem", 
-            BINOP(temp "row", PLUS, temp "%init0"));
+            BINOP(temp "row_body", PLUS, temp "%init0"));
           (* assuming we use 0 for false *)
           STORE(temp "_t_init_row_mem", temp "ZERO"); (* ZERO is a const 0 *)
           (* i++ *)
