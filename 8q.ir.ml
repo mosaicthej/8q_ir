@@ -51,12 +51,6 @@ type ircode = frag list
 
 (* do things now *)
 let ircode: ircode = [
-  (* func printBoard ()->() *)
-  IRFUNC(label "_func_printBoard", []);
-
-  (* func try (c int) -> () *)
-  IRFUNC(label "_func_try", []);
-
 
   IRMAIN([
 
@@ -65,6 +59,7 @@ let ircode: ircode = [
         MOVE(temp "ZERO", CONST(0)); (* const 0 *)
         MOVE(temp "ONE", CONST(1)); (* const 1 *)
         MOVE(temp "TWO", CONST(2)); (* const 2 *)
+        MOVE(temp "THREE", CONST(3)); (* const 3 *)
         MOVE(temp "FOUR", CONST(4)); (* getting wordsize *)
         (* init global vals and vars. *)
         (* Base: const N = 8 *)
@@ -90,11 +85,13 @@ let ircode: ircode = [
        providing a size in bytes *)
     (label "_l_decl_row",
       [ (* bb l_decl_row start *)
-        MOVE(temp "_alloc_row_size", 
+        MOVE(temp "_alloc_row_offset", (* 8N *)
+          BINOP(temp "N", SHL, temp "THREE"));
+        MOVE(temp "_alloc_row_size",  (* 8N+8 *)
           BINOP(temp "N", PLUS, temp "_arr_offset"));
         CALL(label "_alloc_",
         (* size is N x sizeof(bool) + 8 *)
-          (* assume we knows that bool takes 1 byte *)
+          (* bool takes a word (8 bit) *)
           [temp "_alloc_row_size"],
             (* assuming, like C, we have a special `errno` that takes 
           return from system library calls *)
@@ -138,8 +135,10 @@ let ircode: ircode = [
       (* row[i] <- false *)
       (* STORE of temp * temp is MOVE MEM[t1] <- t2 *)
       (* row[i] is at (row+8+i) *)
+      MOVE(temp "_t_init_row_offset",
+        BINOP(temp "%init0", SHL, temp "THREE"));
       MOVE(temp "_t_init_row_mem", 
-        BINOP(temp "row_body", PLUS, temp "%init0"));
+        BINOP(temp "row_body", PLUS, temp "_t_init_row_offset"));
       (* assuming we use 0 for false *)
       STORE(temp "_t_init_row_mem", temp "ZERO"); (* ZERO is a const 0 *)
       (* i++ *)
@@ -171,7 +170,7 @@ let ircode: ircode = [
     (label "_l_decl_col",
       [ (* bb l_decl_col start *)
         MOVE(temp "_alloc_col_body_bytes",
-          BINOP(temp "N", SHL, temp "TWO"));
+          BINOP(temp "N", SHL, temp "THREE"));
         MOVE(temp "_alloc_col_size", 
           BINOP(temp "_arr_offset", PLUS, temp "_alloc_col_body_bytes"));
         CALL(label "_alloc_",
@@ -213,7 +212,7 @@ let ircode: ircode = [
       (label "_l_init_col_loop_body_0",
         [ (* bb l_init_col_loop_body_0 start *)
           MOVE(temp "_t_init_col_offset",
-            BINOP(temp "%init1", SHL, temp "TWO"));
+            BINOP(temp "%init1", SHL, temp "THREE"));
           MOVE(temp "_t_init_col_mem", 
             BINOP(temp "col_body", PLUS, temp "_t_init_col_offset"));
           STORE(temp "_t_init_col_mem", temp "ZERO");
@@ -245,8 +244,10 @@ let ircode: ircode = [
         MOVE(temp "_t_diag_len", 
           BINOP(temp "_t_diag_len_2n", MINUS, temp "ONE"));
         (* get 2n-1 *)
-        MOVE(temo "_alloc_diag1_size", 
-          BINOP(temp "_t_diag_len", ADD, temp "_arr_offset")); (* 8 bytes array header *)
+        MOVE(temp "_t_alloc_diag1_OFFSET", 
+          BINOP(temp "_t_diag_len", SHL, temp "THREE"));
+        MOVE(temp "_alloc_diag1_size", 
+          BINOP(temp "_t_diag_OFFSET", ADD, temp "_arr_offset")); (* 8 bytes array header *)
         JUMP(label "_l_decl_diag1")
       ] (* bb l_decl_diag1_setup end *)
     );
@@ -312,8 +313,10 @@ let ircode: ircode = [
 
     (label "_l_init_diag1_loop_body_0",
       [ (* bb l_init_diag1_loop_body_0 start *)
+        MOVE(temp "_t_init_diag1_offset",
+          BINOP(temp "%init2", SHL, temp "THREE"));
         MOVE(temp "_t_init_diag1_mem", 
-          BINOP(temp "diag1_body", PLUS, temp "%init2"));
+          BINOP(temp "diag1_body", PLUS, temp "_t_init_diag1_offset"));
         STORE(temp "_t_init_diag1_mem", temp "ZERO");
         MOVE(temp "%init2", 
           BINOP(temp "%init2", PLUS, temp "ONE"));
@@ -351,8 +354,10 @@ let ircode: ircode = [
       MOVE(temp "_t_diag2_len_2n", BINOP(temp "N", PLUS, temp "N"));
       MOVE(temp "_t_diag2_len", 
         BINOP(temp "_t_diag2_len_2n", MINUS, temp "ONE"));
+      MOVE(temp "_t_diag2_offset",
+        BINOP(temp "_t_diag2_len", SHL, temp "THREE"));
       MOVE(temp "_alloc_diag2_size", 
-        BINOP(temp "_t_diag2_len", ADD, temp "_arr_offset")); (* 8 bytes array header *)
+        BINOP(temp "_t_diag2_offset", ADD, temp "_arr_offset")); (* 8 bytes array header *)
       JUMP(label "_l_decl_diag2")
     ] (* bb l_decl_diag2_setup end *)
   );
@@ -423,6 +428,8 @@ let ircode: ircode = [
 
     (label "_l_init_diag2_loop_body_0",
       [ (* bb l_init_diag2_loop_body_0 start *)
+        MOVE("_t_init_diag2_offset", 
+          BINOP(temp "%init2", SHL, temp ""))
         MOVE(temp "_t_init_diag2_mem", 
           BINOP(temp "diag2_body", PLUS, temp "%init2"));
         STORE(temp "_t_init_diag2_mem", temp "ZERO");
@@ -480,4 +487,16 @@ let ircode: ircode = [
       ]
     ) (* end main *)
   ]); (* end irmain *)
+
+  (* func printBoard ()->() *)
+  IRFUNC(label "_func_printBoard", [
+    
+
+
+  ]);
+
+  (* func try (c int) -> () *)
+  IRFUNC(label "_func_try", []);
+
+
 ] (* end ircode *)
