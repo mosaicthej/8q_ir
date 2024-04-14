@@ -257,5 +257,88 @@ let ircode: ircode = [
         label "_l_init_diag1_loop_body_0",
         label "_l_init_diag1_loop_end_0");
       LABEL(label "_l_init_diag1_loop_end_0");
+
+    (* nearly same way, do diag2 *)
+    (* Base: var diag2 boolArray = [N+N-1]boolean *)
+    (* Tabsyn: /*
+ , VarDecl([ (diag2, NameType(boolArray), NilExp)]) (* diag2 init to nil *)
+ , AssignStmt(
+    [SimpleVar(boolArray, diag2)], (* diag2 to alloc_B *)
+    [NewExp(bool, (* alloc bool with length *)
+      OpExp( (* (N+N)-1 *)
+        OpExp(
+          VarExp(IntType, SimpleVar(N)),
+          PlusOp,
+          VarExp(IntType, SimpleVar(IntType, N))),
+        MinusOp,
+      IntExp(1)))])
+*/ *)
+  MOVE(temp "_t_diag2_len_2n", BINOP(temp "N", PLUS, temp "N"));
+  MOVE(temp "_t_diag2_len", BINOP(temp "_t_diag2_len_2n", MINUS, temp "ONE"));
+  MOVE(temp "_alloc_diag2_size", 
+    BINOP(temp "_t_diag2_len", ADD, temp "_arr_offset")); (* 8 bytes array header *)
+  LABEL(label "_decl_diag2");
+  CALL(label "_alloc_",
+    (* size is (2n-1) x sizeof(bool) + 8 *)
+    (* assume we knows that bool takes 1 byte *)
+    [temp "_alloc_diag2_size"]
+    [temp "diag2", temp "errno"]);
+  MOVE(temp "diag2_body", (* body of an array begin at 8 bytes *)
+    BINOP(temp "diag2", PLUS, temp "_arr_offset"));
+      (* now, we need to initialize the array (to the zero-val) *)
+      (* Tabsyn: /*
+ , AssignStmt(
+    SubScriptVar( 
+      SimpleVar(boolArray, row), 
+      IntExp(0)), 
+    BoolExp(false))
+ , Scope([ 
+    VarDecl(%init2, IntType, IntExp(2)) 
+  , ForStmt(
+      OpExp( (* For i < N+N-1 *)
+        SimpleVar(IntType, %init2), 
+        IntLtOp, 
+        OpExp( (* N+N-1 *)
+          OpExp(
+            VarExp(IntType, SimpleVar(IntType, N)),
+            PlusOp,
+            VarExp(IntType, SimpleVar(IntType, N))),
+          MinusOp,
+          IntExp(1)))
+    , Scope([ (* loop body *)
+        Scope ([ (* loop body scope *)
+          AssignStmt( (* A <- B *)
+            SubScriptVar( (* A is row[i] *)
+              SimpleVar(boolArray, row), 
+              IntExp(SimpleVar(IntType, %init2))), 
+            BoolExp(false))]) (* row[i] <- false *) 
+          (* continue scope *)
+      , AssignStmt( (* A <- B *)
+        [(SimpleVar(IntType, %init2))], (* A is i *)
+        [OpExp(
+          SimpleVar(IntType, %init2), 
+          PlusOp, 
+          IntExp(1))])]))]) (* i <- i+1 *)
+*/ *)
+    LABEL(label "_init_diag2");
+      MOVE(temp "%init2", CONST(0));
+      LABEL(label "_init_diag2_loop_head_0");
+      MOVE(temp "_t_init_diag2_loop_test", 
+      ROP(temp "%init2", LT, temp "_t_diag2_len"));
+      CJUMP(temp "_init_diag2_loop_test",
+      label "_l_init_diag2_loop_body_0",
+      label "_l_init_diag2_loop_end_0");
+      LABEL(label "_l_init_diag2_loop_body_0");
+      MOVE(temp "_t_init_diag2_mem", 
+        BINOP(temp "diag2_body", PLUS, temp "%init2"));
+      STORE(temp "_t_init_diag2_mem", temp "ZERO");
+      MOVE(temp "%init2", 
+        BINOP(temp "%init2", PLUS, temp "ONE"));
+      MOVE(TEMP "_t_init_diag2_loop_test", 
+        ROP(temp "%init2", LT, temp "_t_diag2_len"));
+      CJUMP(temp "_init_diag2_loop_test",
+      label "_l_init_diag2_loop_body_0",
+      label "_l_init_diag2_loop_end_0");
+      LABEL(label "_l_init_diag2_loop_end_0");
   ]) (* end irmain *)
 ] (* end ircode *)
