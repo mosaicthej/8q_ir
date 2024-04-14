@@ -23,7 +23,7 @@ Prog([
 
        (* var col intArray = [N] int { } *)
      , VarDecl([ (col, NameType(intArray), NilExp)])
-     , AssignStmt(SimpleVar(intArray, col)], [NewExp(int, SimpleVar(IntType, N))]
+     , AssignStmt([SimpleVar(intArray, col)], [NewExp(int, SimpleVar(IntType, N))]
      , Scope([ VarDecl(%init1, IntType, IntExp(0))
              , ForStmt(OpExp(SimpleVar(IntType, %init1), IntLtOp, SimpleVar(IntType, N))
 	             , Scope([ Scope ([ AssignStmt(SubScriptVar(SimpleVar(NameType(intArray), col), IntExp(SimpleVar(IntType, %init1))), IntExp(0))])
