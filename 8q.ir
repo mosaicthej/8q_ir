@@ -64,6 +64,7 @@ let ircode: ircode = [
         MOVE(temp "TWO", CONST(2)); (* const 2 *)
         MOVE(temp "THREE", CONST(3)); (* const 3 *)
         MOVE(temp "FOUR", CONST(4)); (* getting wordsize *)
+        MOVE(temp "SEVEN", CONST(7));
         (* init global vals and vars. *)
         (* Base: const N = 8 *)
         (* Tabsyn: ConstDecl(N, IntType, IntExp(8)) *)
@@ -674,8 +675,294 @@ let ircode: ircode = [
     ]);
   ]);
 
+  (* Base: /*
+func try (c int) {
+  if c==N { 
+    printBoard()
+  } else {
+    for r:=0; r<N; r=r+1 {
+      if !row[r] && !diag1[r+c] && !diag2[r+7-c] {
+        row[r] = true; diag1[r+c] = true; diag2[r+7-c] = true
+        col[c] = r
+        try(c+1)
+        row[r] = false; diag1[r+c] = false; diag2[r+7-c] = false
+      }
+    }
+  }
+}
+  */ *)
+  (* Tabsyn: /* 
+, FunDecl( try, [(IntType, c)],[] 
+  (* name: try, varList: c:int, retList: null *)
+  , Scope ([  (* func body start here: *)
+    IfElseStmt( (* if (c==N) *)
+      OpExp( (* c == N *)
+        SimpleVar(IntType, c), 
+        IntEqOp, 
+        SimpleVar(IntType, N))
+      (* thenL { printBoard() } *)
+    , Scope ([ CallStmt(printBoard, []) ])
+    , Scope ([ (* else scope from ite *)
+        Scope ([ (* r := 0, for the loop *)
+          VarDecl([(r, IntType), IntExp(0)])
+            (* for ... r < N ... { *)
+        , ForStmt( 
+            OpExp( (* r < N *)
+              SimpleVar(IntType, r), 
+              IntLtOp, 
+              SimpleVar(IntType, N))
+          , Scope ([ (* loop body *)
+              Scope ([ (* the body scope of the loop *)
+                (* if !row[r] && !diag1[r+c] && !diag2[r+7-c] *)
+              , IfElseStmt ( (* _rewrite AndOp to multiple IfStmt *)
+                  SubScriptVar( (* testing on !row[r] *)
+                    SimpleVar(NamedType(boolArray), row), 
+                    SimpleVar(IntType, r))
+                , Scope ([]) (* if row[r], nothing, else: *)
+                , IfElseStmt ( (* passed !row[r], now test !diag1[r+c] *)
+                    SubScriptVar( (* testing on !diag1[r+c] *)
+                      SimpleVar(NamedType(boolArray), diag1), 
+                      OpExp(
+                        SimpleVar(IntType, r), 
+                        PlusOp, 
+                        SimpleVar(IntType, c)))
+                  , Scope ([]) (* if diag1[r+c], nothing, else: *)
+                  , IfElseStmt ( (* passed !diag1[r+c], now test !diag2[r+7-c] *)
+                      SubScriptVar( (* testing on !diag2[r+7-c] *)
+                        SimpleVar(NamedType(boolArray), diag2), 
+                        OpExp(
+                          OpExp(
+                            SimpleVar(IntType, r), 
+                            PlusOp, 
+                            IntExp(7)),
+                          MinusOp, 
+                          SimpleVar(IntType, c)))
+                        , Scope ([]) (* if diag2[r+7-c], nothing, else: *)
+                        , Scope ([ (* all three cases are passed *)
+                            AssignStmt([ (* As <- Bs *)
+                              SubScriptVar( (* A1 is row[r] *)
+                                SimpleVar(boolArray, row),   
+                                SimpleVar(IntType, r))
+                            , SubScriptVar( (* A2 is diag1[r+c] *)
+                                SimpleVar(NamedType(boolArray), diag1), 
+                                OpExp( (* r+c *)
+                                  SimpleVar(IntType, r), 
+                                  PlusOp, 
+                                  SimpleVar(IntType, c)))
+                            , SubScriptVar( (* A3 is diag2[r+7-c] *)
+                                SimpleVar(NamedType(boolArray), diag2), 
+                                OpExp( (* (r+7)-c *)
+                                  OpExp(
+                                    SimpleVar(IntType, r), 
+                                    PlusOp, 
+                                    IntExp(7)), 
+                                  MinusOp, 
+                                  SimpleVar(IntType, c)))]
+                                (* Bs is [false, false, false] *)
+                          , [ BoolExp(true), BoolExp(true), BoolExp(true) ])
+                                
+                          , AssignStmt([ (* col[c] <- r *)
+                              SubScriptVar(
+                                SimpleVar(NamedType(intArray), col), 
+                                SimpleVar(IntType, c))], 
+                              [SimpleVar(IntType, r)])
+                                   
+                          , CallExp( (* (apply try (c+1)) *)
+                              try, 
+                              OpExp( 
+                                SimpleVar(IntType, c), 
+                                PlusOp, 
+                                IntExp(1)))
+                                           
+                          , AssignStmt([ (* As <- Bs *)
+                              SubScriptVar( (* A1 is row[r] *)
+                                SimpleVar(boolArray, row),   
+                                SimpleVar(IntType, r))
+                            , SubScriptVar( (* A2 is diag1[r+c] *)
+                                SimpleVar(NamedType(boolArray), diag1), 
+                                OpExp(
+                                  SimpleVar(IntType, r),
+                                  PlusOp, 
+                                  SimpleVar(IntType, c)))
+                            , SubScriptVar( (* A3 is diag2[r+7-c] *)
+                                SimpleVar(
+                                  NamedType(boolArray), diag2), 
+                                  OpExp( (* r+7-c *)
+                                    OpExp(
+                                      SimpleVar(IntType, r), 
+                                      PlusOp, 
+                                      IntExp(7)), 
+                                    MinusOp, 
+                                    SimpleVar(IntType, c)))]
+                            (* Bs is [false, false, false] *)
+                          , [ BoolExp(false), BoolExp(false), BoolExp(false)])])
+                          (* outside of the *)
+                          )))]) (* end of the loop body scope *)
+                      (* continue scope *)
+                      (* ... r=r+1 ... *)
+            , AssignStmt( (* r <- r+1 *)
+                [SimpleVar(IntType, r)], 
+                [OpExp(
+                  SimpleVar(IntType, r), 
+                  PlusOp, 
+                  IntExp(1))])]))])]))])) (* end of the function body *)
+  */ *)
   (* func try (c int) -> () *)
-  IRFUNC(label "_func_try", []);
+  IRFUNC(label "_func_try", [
+    (* assume temp _arg_c is passed in *)
+    (* fn preambles *)
+    (label "_f_try_preamble", [
+      MOVE(temp "ZERO", BINOP(temp "ZERO", OR, temp "ZERO"));
+      JUMP(label "_f_try_if_0_header")
+    ]);
+  (* if (c==N) *)
+  (label "_f_try_if_0_header", [
+    MOVE(temp "_t_try_if_0_test",
+      ROP(temp "_t_try_arg_c", EQ, temp "N"));
+    CJUMP(temp "_t_try_if_0_test",
+      label "_f_try_if_0_then",
+      label "_f_try_if_0_else")
+    ]);
+  (* then *)
+  (label "_f_try_if_0_then", [
+    CALL(label "_func_printBoard", [], []);
+    JUMP(label "_f_try_if_0_fi")
+  ]);
+  (* if_0 fi *)
+  (label "_f_try_if_0_fi", [
+    MOVE(temp "ZERO", BINOP(temp "ZERO", OR, temp "ZERO"));
+    JUMP(label "_f_try_fn_end")
+  ]);
+  (* else *)
+  (label "_f_try_if_0_else", [
+    MOVE(temp "_t_try_r_0", CONST(0));
+    JUMP(label "_f_try_loop_first_0")
+  ]);
+  (* loop *)
+  (label "_f_try_loop_first_0", [
+    MOVE(temp "_t_try_loop_test_0",
+      ROP(temp "_t_try_r_0", LT, temp "N"));
+    CJUMP(temp "_t_try_loop_test_0",
+      label "_f_try_loop_body_0",
+      label "_f_try_loop_fi_0")
+    ]);
+  (* loop test *)
+  (label "_f_try_loop_test_0", [
+    MOVE(temp "_t_try_loop_test_0",
+      ROP(temp "_t_try_r_0", LT, temp "N"));
+    CJUMP(temp "_t_try_loop_test_0",
+      label "_f_try_loop_body_0",
+      label "_f_try_loop_fi_0")
+    ]);
+  (* loop fi *)
+  (label "_f_try_loop_fi_0", [
+    MOVE(temp "ZERO", BINOP(temp "ZERO", OR, temp "ZERO"));
+    JUMP(label "_f_try_if_0_fi")
+  ]);
+  
+  (* loop body *)
+  (label "_f_try_loop_body_0" [
+    MOVE(temp "zero", BINOP(temp "ZERO", OR, temp "ZERO"));
+    JUMP(label "_f_try_if_1_header_0")
+  ]);
+
+  (* loop last *)
+  (label "_f_try_loop_last_0", [
+    MOVE(temp "_t_try_r_0",
+      BINOP(temp "_t_try_r_0", PLUS, temp "ONE"));
+    JUMP(label "_f_try_loop_test_0")
+  ]);
+
+  (* if 1: !row[r] *)
+  (label "_f_try_if_1_header_0"[
+    MOVE(temp "_t_row_r_offset",
+      BINOP(temp "_t_try_r_0", SHL, temp "THREE"));
+    MOVE(temp "_t_row_r_mem",
+      BINOP(temp "row_body", PLUS, temp "_t_row_r_offset"));
+    LOAD(temp "_t_row_r_val", temp "_t_row_r_mem");
+    MOVE(temp "_f_try_if_1_cond_0",
+      ROP(temp "_t_row_r_val", NEQ, temp "ZERO"));
+    CJUMP(temp "_f_try_if_1_cond_0",
+      label "_f_try_if_2_header_0",
+      label "_f_try_if_fin_1")
+  ]);
+
+  (* if 2: !diag1[r+c] *)
+  (label "_f_try_if_2_header_0", [
+    MOVE(temp "_t_rc",
+      BINOP(temp "_t_try_r_0", PLUS, temp "_t_try_arg_c"));
+    MOVE(temp "_t_diag1_rc_offset",
+      BINOP(temp "_t_rc", SHL, temp "THREE"));
+    MOVE(temp "_t_diag1_rc_mem",
+      BINOP(temp "_t_diag1_rc_offset", PLUS, temp "diag1_body"));
+    LOAD(temp "_t_diag1_rc_val", temp "_t_diag1_rc_mem");
+    MOVE(temp "_f_try_if_2_test_0",
+      ROP(temp "_t_diag1_rc_val", NEQ, temp "ZERO"));
+    CJUMP(temp "_t_diag1_rc_val",
+      label "_f_try_if_3_header_0",
+      label "_f_try_if_fin_1")]);
+
+  (* if 3: !diag2[r+7-c] *)
+  (label "_f_try_if_3_header_0", [
+    MOVE(temp "_t_rmc",
+      BINOP(temp "_t_try_r_0" MINUS, temp "_t_try_arg_c"));
+    MOVE(temp "_t_rp7mc",
+      BINOP(temp "_t_rmc" PLUS, temp "SEVEN"));
+    MOVE(temp "_t_diag2_rp7mc_offset",
+      BINOP(temp "_t_rp7mc", SHL, temp "THREE"));
+    MOVE(temp "_t_diag2_rp7mc_mem",
+      BINOP(temp "_t_diag2_rp7mc_offset", PLUS, temp "diag2_body"));
+    LOAD(temp "_t_diag2_rp7mc_val", temp "_t_diag2_rp7mc_mem");
+    MOVE(temp "_f_try_if_3_test_0",
+      ROP(temp "_t_diag2_rp7mc_val", NEQ, temp "ZERO"));
+    CJUMP(temp "_f_try_if_3_test_0",
+      label "_f_try_if_body_1",
+      label "_f_try_if_fin_1")]);
+
+
+  (* if body *)
+  (label "_f_try_if_body_1", [
+    (* row[r] = true *)
+    STORE(temp "_t_row_r_mem", temp "ONE");
+    (* diag1[r+c] = true *)
+    STORE(temp "_t_diag1_rc_mem", temp "ONE");
+    (* diag2[r+7-c] = true *)
+    STORE(temp "_t_diag2_rp7mc_mem", temp "ONE");
+    (* col[c] = r *)
+    MOVE(temp "_t_col_c_offset",
+      BINOP(temp "_t_try_arg_c", SHL, temp "THREE"));
+    MOVE(temp "_t_col_c_mem",
+      BINOP(temp "col_body", PLUS, temp "_t_col_c_offset"));
+    STORE(temp "_t_col_c_mem", temp "_t_try_r_0");
+    (* try(c+1) *)
+    MOVE(temp "_t_try_cp1",
+      BINOP(temp "_t_try_arg_c", PLUS, temp "ONE"));
+    CALL(label "_func_try", 
+      [temp "_t_try_cp1"], []);
+
+    (* row[r] = false *)
+    STORE(temp "_t_row_r_mem", temp "ZERO");
+    (* diag1[r+c] = false *)
+    STORE(temp "_t_diag1_rc_mem", temp "ZERO");
+    (* diag2[r+7-c] = false *)
+    STORE(temp "_t_diag2_rp7mc_mem", temp "ZERO");
+    JUMP(label "_f_try_if_fin_1")]);
+
+  
+  
+  (* if fin 1 *)(* jump to f_try_loop_last_0 *)
+  (label "_f_try_if_fin_1", [
+    MOVE(temp "ZERO", BINOP(temp "ZERO", OR, temp "ZERO"));
+    JUMP(label "_f_try_loop_last_0")
+  ]);
+
+  (* fn try fn end *) (* view-unshift and return *)
+  (label "_f_try_fn_end", [
+    MOVE(temp "ZERO", BINOP(temp "ZERO", OR, temp "ZERO"));
+    JUMP(label "%__SECRET_INTERNAL_DONT_SET_THIS_OR_YOU_WILL_BE_FIRED")
+  ]);
+  (* end of try *)
+  ]
 
 
 ] (* end ircode *)
