@@ -135,6 +135,58 @@ let ircode: ircode = [
             label "_l_init_row_loop_end_0");
         LABEL(label "_l_init_row_loop_end_0");
 
+    (* very cool, now do the same thing for col *)
+    (* Base: var col intArray = [N]int *)
+    (* Tabsyn: 
+     , VarDecl([ (col, NameType(intArray), NilExp)])
+     , AssignStmt([SimpleVar(intArray, col)], [NewExp(int, SimpleVar(IntType, N))] *)
+
+    LABEL(label "_decl_col");
+      MOVE(temp "_alloc_col_body_bytes",
+        BINOP(temp "N", SHL, temp "TWO"));
+      MOVE(temp "_alloc_col_size", 
+        BINOP(
+          temp "_arr_offset",
+          PLUS,
+          temp "_alloc_col_body_bytes"));
+    CALL(label "_alloc_",
+        (* size is N x sizeof(int) + 8 *)
+          (* assume we knows that int takes 4 byte *)
+          [temp "_alloc_col_size"]
+          [temp "col", temp "errno"]);
+    MOVE(temp "col_body", (* body of an array begin at 8 bytes *)
+      BINOP(temp "col", PLUS, temp "_arr_offset"));
+
+    (* now, we need to initialize the array (to the zero-val) *)
+    (* Tabsyn: /*
+     , Scope([ VarDecl(%init1, IntType, IntExp(0))
+             , ForStmt(OpExp(SimpleVar(IntType, %init1), IntLtOp, SimpleVar(IntType, N))
+	             , Scope([ Scope ([ AssignStmt(SubScriptVar(SimpleVar(NameType(intArray), col), IntExp(SimpleVar(IntType, %init1))), IntExp(0))])
+		     , AssignStmt([(SimpleVar(IntType, %init1))], [OpExp(SimpleVar(IntType, %init1), PlusOp, IntExp(1))])]))])
+*/ *)
+    LABEL(label "_init_col");
+      MOVE(temp "%init1", CONST(0));
+      LABEL(label "_init_col_loop_head_0");
+        MOVE(temp "_t_init_col_loop_test", 
+          ROP(temp "%init1", LT, temp "N"));
+        CJUMP(temp "_init_col_loop_test",
+          label "_l_init_col_loop_body_0",
+          label "_l_init_col_loop_end_0");
+        LABEL(label "_l_init_col_loop_body_0");
+          MOVE(temp "_t_init_col_offset",
+            BINOP(temp "%init1", SHL, temp "TWO"));
+          MOVE(temp "_t_init_col_mem", 
+            BINOP(temp "col_body", PLUS, temp "_t_init_col_offset"));
+          STORE(temp "_t_init_col_mem", temp "ZERO");
+          MOVE(temp "%init1", 
+            BINOP(temp "%init1", PLUS, temp "ONE"));
+          MOVE(TEMP "_t_init_col_loop_test", 
+            ROP(temp "%init1", LT, temp "N"));
+        CJUMP(temp "_init_col_loop_test",
+        label "_l_init_col_loop_body_0",
+        label "_l_init_col_loop_end_0");
+        LABEL(label "_l_init_col_loop_end_0");
+
 
   ]) (* end irmain *)
 ] (* end ircode *)
