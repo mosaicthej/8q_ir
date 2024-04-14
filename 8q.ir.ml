@@ -156,7 +156,7 @@ let ircode: ircode = [
   
     [ LABEL(label "_l_init_row_loop_end_0"),
       [ (* bb l_init_row_loop_end_0 start *)
-        BINOP(temp "ZERO", OR, temp "ZERO"),
+        MOVE(temp "ZERO", BINOP(temp "ZERO", OR, temp "ZERO")),
         JUMP(label "_l_decl_col")
       ] (* bb l_init_row_loop_end_0 end *)
     ],
@@ -228,7 +228,7 @@ let ircode: ircode = [
 
       [ LABEL(label "_l_init_col_loop_end_0"),
         [ (* bb l_init_col_loop_end_0 start *)
-          BINOP(temp "ZERO", OR, temp "ZERO"),
+          MOVE(temp "ZERO", BINOP(temp "ZERO", OR, temp "ZERO")),
           JUMP(label "_decl_diag1_setup")
         ] (* bb l_init_col_loop_end_0 end *)
       ],
@@ -326,7 +326,7 @@ let ircode: ircode = [
 
     [ LABEL(label "_l_init_diag1_loop_end_0"),
         [ (* bb l_init_diag1_loop_end_0 start *)
-          BINOP(temp "ZERO", OR, temp "ZERO"), (* nop *)
+          MOVE(temp "ZERO", BINOP(temp "ZERO", OR, temp "ZERO")),
           JUMP(label "_decl_diag2_setup")
         ] (* bb l_init_diag1_loop_end_0 end *)
     ],
@@ -437,7 +437,7 @@ let ircode: ircode = [
 
     [ LABEL(label "_l_init_diag2_loop_end_0"),
       [ (* bb l_init_diag2_loop_end_0 start *)
-        BINOP(temp "ZERO", OR, temp "ZERO")
+        MOVE(temp "ZERO", BINOP(temp "ZERO", OR, temp "ZERO")),
         JUMP(label "_irmain_to_func_main")
       ] (* nop *)
     ],
