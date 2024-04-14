@@ -340,5 +340,11 @@ let ircode: ircode = [
       label "_l_init_diag2_loop_body_0",
       label "_l_init_diag2_loop_end_0");
       LABEL(label "_l_init_diag2_loop_end_0");
+    (* now, we need to call the main function *)
+    CALL(label "_func_main", [], []);
+    JUMP(label "_end");
+    (* end of main *)
+    (* so I treat main as a function *)
+    LABEL(label "_end");
   ]) (* end irmain *)
 ] (* end ircode *)
