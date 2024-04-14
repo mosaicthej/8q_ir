@@ -51,6 +51,9 @@ type ircode = frag list
 
 (* do things now *)
 let ircode: ircode = [
+  IRSTRING("O");
+  IRSTRING(".");
+  IRSTRING("\n");
 
   IRMAIN([
 
@@ -489,15 +492,186 @@ let ircode: ircode = [
   ]); (* end irmain *)
 
   (* func printBoard ()->() *)
-  IRFUNC(label "_func_printBoard", [
-    (* Base: for i=0; i<N ; i=i+1 *)
-    (* First, init the i, test and link *)
-    (label "_f_pb_loop_outer_0"
-      [
-        MOVE(temp "_t_i_pb_0", CONST(0));
-        
+  (* Base: /*
+    func printBoard() {
+      for i:=0; i<N; i=i+1 {
+        for j:=0; j<N; j=j+1 {
+          if col[i]==j { write("O")
+          } else { write(".") }
+        }
+        write("\n")
+      }
+      write("\n")
+    }
+    */ *)
+  (* Tabsyn: /*
+ (* func printBoard() { *)
+ , FunDecl( printBoard,[],[]
+  (* name: printBoard, varList: null, retList: null *)
+      (* for i:=0; i<N; i=i+1 { *)
+      (* _hoist stmt out of `for'_ *)
+  , Scope ([ 
+      VarDecl([(i, IntType), IntExp(0)])
+    , ForStmt( (* for i < N *)
+        OpExp( (* outer loop header *)
+          VarExp(SimpleVar(IntType, i)), 
+          IntLtOp, 
+          VarExp(SimpleVar(IntType, N))),
+      , Scope ([ (* outer loop body *)
+        , Scope ([ (* for j:=0; j<N; j=j+1 { *)
+            VarDecl([(j, IntType), IntExp(0)]) (* init j <- 0 *)
+          , ForStmt( (* for j < N *)
+              OpExp( (* inner loop header *)
+                VarExp(SimpleVar(IntType, j)), 
+                IntLtOp, 
+                VarExp(SimpleVar(IntType, N))),
+            , Scope ([ (* inner loop body *)
+              , Scope ([ (* this is the body scope *)
+                  IfElseStmt(  (* if (col[i]==j) *)
+                    SubScriptVar( (* col[j] *)
+                      SimpleVar(NameType(intArray), col), 
+                      IntEqOp, 
+                      SimpleVar(IntType, j)),
+                      (* { write("O") } *)
+                  , Scope([ (* 'then' of the 'if' *)
+                      CallStmt( (* apply write (list "O") *)
+                        write, 
+                        [(StringType, StringExp("O"))]) ])
+                      (* else { write(".") } *)
+                  , Scope([ 
+                      CallStmt( (* apply write (list ".") *)
+                        write, 
+                        [(StringType, StringExp("."))]) ])) ])
+                  (* this is the continue scope *)
+              , AssignStmt( (* j <- j+1 *)
+                [SimpleVar(IntType, j)], 
+                [OpExp(
+                  SimpleVar(IntType, j), 
+                  PlusOp, 
+                  IntExp(1))]) ]))
+              (* done the inner loop *)
+          , CallStmt( (* apply write (list "\n") *)
+              write, 
+              [(StringType, StringExp("\n"))]) ])
+              (* this is the continue scope *)
+        , AssignStmt( (* i <- i+1 *)
+            [SimpleVar(IntType, i)], 
+            [OpExp(
+              SimpleVar(IntType, i), 
+              PlusOp, 
+              IntExp(1))]) ]))
+      (* done the outer loop *)
+    , CallStmt(write, [(StringType, StringExp("\n"))]) ]))
+  *)
 
+  IRFUNC(label "_func_printBoard", [
+    (* Translate all loops into:
+      if(cond) { do {...} while(cond); }
+    *)
+    (* First, init the i, test and link *)
+    (label "_f_pb_loop_outer_first_0" [
+      MOVE(temp "_t_i_pb_0", CONST(0));
+      MOVE(temp "_t_i_pb_test_0",
+        ROP(temp "_t_i_pb_0", LT, temp "N"));
+      CJUMP(temp "_t_i_pb_test_0",
+        label "_l_pb_loop_outer_body_0",
+        label "_l_pb_loop_outer_fi_0")
+      ]);
+
+    (* Outer loop body *)
+    (label "_l_pb_loop_outer_body_0", [
+      (* nop *)    
+      MOVE(temp "ZERO", BINOP(temp "ZERO", OR, temp "ZERO"));
+      JUMP(label "_f_pb_loop_inner_first_0")
+    ]);
+
+    (* Inner loop header *)
+    (label "_f_pb_loop_inner_first_0", [
+      MOVE(temp "_t_j_pb_0", CONST(0));
+      MOVE(temp "_t_j_pb_test_0",
+      ROP(temp "_t_j_pb_0", LT, temp "N"));
+      CJUMP(temp "_t_j_pb_test_0",
+        label "_l_pb_loop_inner_body_0",
+        label "_l_pb_loop_inner_fi_0")
+    ]);
     
+    (label "_l_pb_loop_inner_body_0", [
+      (* nop *)
+      MOVE(temp "_t_pb_inner_offset",
+        BINOP(temp "_t_i_pb_0", SHL, temp "THREE"));
+      MOVE(temp "_t_pb_inner_mem", (* &col[i] *)
+        BINOP(temp "col_body", PLUS, temp "_t_pb_inner_offset"));
+      LOAD(temp "_t_pb_coli_val", temp "_t_pb_inner_mem");
+      
+      (* if (col[i]==j) *)
+      MOVE(temp "_t_pb_inner_test",
+        ROP(temp "_t_pb_coli_val", EQ, temp "_t_j_pb_0"));
+      CJUMP(temp "_t_pb_inner_test",
+        label "_l_pb_inner_then_0",
+        label "_l_pb_inner_else_0")
+    ]);
+    (* Inner loop then *)
+    (label "_l_pb_inner_then_0", [
+      CALL(label "_write", [temp "_str_O"], []);
+      JUMP(label "_l_pb_inner_last_0")
+    ]);
+    (* Inner loop else *)
+    (label "_l_pb_inner_else_0", [
+      CALL(label "_write", [temp "_str_."], []);
+      JUMP(label "_l_pb_inner_last_0")
+    ]);
+    (* Inner loop last *)
+    (label "_l_pb_inner_last_0", [
+      MOVE(temp "_t_j_pb_0", (* j <- j+1 *)
+        BINOP(temp "_t_j_pb_0", PLUS, temp "ONE"));
+      JUMP(label "_l_pb_loop_test_0")
+    ]);
+    (* Inner loop test *)
+    (label "_l_pb_loop_test_0", [
+      MOVE(temp "_t_j_pb_test_0", 
+        ROP(temp "_t_j_pb_0", LT, temp "N"));
+      CJUMP(temp "_t_j_pb_test_0",
+        label "_l_pb_loop_inner_body_0",
+        label "_l_pb_loop_inner_fi_0")
+    ]);
+    (* Inner loop fi *)
+    (label "_l_pb_loop_inner_fi_0", [
+      MOVE(temo "ZERO", BINOP(temp "ZERO", OR, temp "ZERO"));
+      JUMP(label "_l_pb_loop_outer_last_0")
+    ]);
+    
+    (* Outer loop last *)
+    (label "_l_pb_loop_outer_last_0", [
+      CALL(label "_write", [temp "_str_nl"], []);
+      MOVE(temp "_t_i_pb_0", (* i <- i+1 *)
+        BINOP(temp "_t_i_pb_0", PLUS, temp "ONE"));
+    ]);
+    (* Outer loop test *)
+    (label "_l_pb_loop_outer_test_0", [
+      MOVE(temp "_t_i_pb_test_0",
+        ROP(temp "_t_i_pb_0", LT, temp "N"));
+      CJUMP(temp "_t_i_pb_test_0",
+        label "_l_pb_loop_outer_body_0",
+        label "_l_pb_loop_outer_fi_0")
+    ]);
+        
+    (* Outer loop fi *)
+    (label "_l_pb_loop_outer_fi_0", [
+      MOVE(temp "ZERO", BINOP(temp "ZERO", OR, temp "ZERO"));
+      JUMP(label "_l_pb_fn_end_0")
+    ]);
+  
+    (* End of fn printBoard *)
+    (label "_l_pb_fn_end_0", [
+      CALL(label "_write", [temp "_str_nl"], []);
+      JUMP(label "_l_pb_fn_fi")
+    ]);
+
+    (* Fi of fn printBoard *)
+    (label "_l_pb_fn_fi", [
+      MOVE(temp "ZERO", BINOP(temp "ZERO", OR, temp "ZERO"));
+      JUMP(label "%__SECRET_INTERNAL_DONT_SET_THIS_OR_YOU_WILL_BE_FIRED")
+    ]);
   ]);
 
   (* func try (c int) -> () *)
