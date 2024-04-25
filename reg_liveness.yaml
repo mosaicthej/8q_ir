@@ -270,7 +270,7 @@
       - *_f_try_if_body_1
     - across_funcall: true
     - alloc:
-      - reg: t6 # reuse once in body before funcall
+      - reg: t0
       - stack: null
 
   - _t_try_cp1: &_t_try_cp1 # c <- c+1
