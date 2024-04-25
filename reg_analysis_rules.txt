@@ -74,8 +74,7 @@ arr_row_body: .space 32 # this is pre-computed.
 ...
 ```
 
-Thus, there is no need to add base address and the offset
-  separately, just do this would suffice:
+To access the array, do this:
 
 ```asm
 .text
@@ -83,7 +82,10 @@ Thus, there is no need to add base address and the offset
 # assume t6 <-> r
 ...
 slli  t1, t6, 2 # to access row[r],
-lw t0, arr_row(t1) # t1 is the offset.
+la    t0, arr_row_body # this pseudo-instruction 
+# usually, $gp is set for data in bss/data sections
+# and this would be replaced with add immediate
+# on the gp.
 ...
 ```
 
