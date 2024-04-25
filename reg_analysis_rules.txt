@@ -45,3 +45,7 @@ Since a CONST can't be a lval, it is either
 3.
 i would assume arrays as const that is already existed
   in the `.data` section.
+
+Their addresses will be saved in a register if they are hot.
+The hot registers will be noted in beginning of the codegen.
+
