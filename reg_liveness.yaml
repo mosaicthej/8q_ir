@@ -1,0 +1,273 @@
+- temps:
+  - _t_try_arg_c: &_t_try_arg_c
+    - defined_in:
+      - ENTRY # natively in a0
+      - *_f_try_if_body_1 # restored after the call
+    - referred_in:
+      - *_f_try_if_0_header
+      - *_f_try_if_2_header_0
+      - *_f_try_if_3_header_0
+      - *_f_try_if_body_1
+    - dies_in:
+      - *_f_try_if_body_1
+    - across_funcall: true
+    - alloc:
+      - reg: a0
+      - stack: fp-4
+
+  - _t_try_r_0: &_t_try_r_0
+    - defined_in:
+      - *_f_try_if_0_else
+      - *_f_try_if_fin_1
+    - referred_in:
+      - *_f_try_loop_test_0
+      - *_f_try_if_1_header_0
+      - *_f_try_if_2_header_0
+      - *_f_try_if_3_header_0
+      - *_f_try_if_body_1
+      - *_f_try_if_fin_1
+    - dies_in:
+      - *_f_try_if_fin_1
+    - across_funcall: true
+    - alloc:
+      - reg: s1 # s reg starting from 1, since s0 is for fp.
+      - stack: fp-8
+
+  # suite for row[r]
+  - _t_row_r_offset: &_t_row_r_offset
+    - defined_in:
+      - *_f_try_if_1_header_0
+      - *_f_try_if_body_1 # recompute after the call
+    - referred_in: []
+    - dies_in:
+      - *_f_try_if_1_header_0
+      - *_f_try_if_body_1
+    - across_funcall: false
+    - alloc:
+      - reg: t0
+      - stack: null
+
+  - row_body: &_row_body
+    - defined_in: # la  t1, arr_row_body
+      # or, use gp on bss, and `addi t1, gp, <offset>`
+      - *_f_try_if_1_header_0
+      - *_f_try_if_body_1
+    - referred_in:
+      - *_f_try_if_body_1
+    - dies_in:
+      - *_f_try_if_body_1
+    - across_funcall: true
+    - alloc:
+      - reg: t1 # use and discard
+      - stack: null
+
+  # this is reused in the body and after the funcall,
+  # but, since it would only need 2-3 r-type instructions
+  # to recompute, it is not worth caching.
+  - _t_row_r_mem: &_t_row_r_mem
+    - defined_in:
+      - *_f_try_if_1_header_0
+      - *_f_try_if_body_1 # recompute after the call
+    - referred_in:
+      - *_f_try_if_body_1
+    - dies_in:
+      - *_f_try_if_body_1
+  - across_funcall: true
+  - alloc:
+    - reg: t6 # reuse once in body before funcall
+    - stack: null
+
+  - _t_row_r_val: &_t_row_r_val
+    - defined_in:
+      - *_f_try_if_1_header_0
+    - referred_in: []
+    - dies_in:
+      - *_f_try_if_1_header_0
+    - across_funcall: false
+    - alloc:
+      - reg: t0 # use once and discard
+      - stack: null
+
+  # suite for diag1[r+c]
+  - _t_rc: &_t_rc
+    - defined_in:
+      - *_f_try_if_2_header_0
+      - *_f_try_if_body_1 # recompute after the call
+    - referred_in: []
+    - dies_in:
+      - *_f_try_if_2_header_0
+      - *_f_try_if_body_1
+    - across_funcall: false
+    - alloc:
+      - reg: t0 # use once and discard
+      - stack: null
+        
+  - _t_diag1_rc_offset: &_t_diag1_rc_offset
+    - defined_in:
+      - *_f_try_if_2_header_0
+      - *_f_try_if_body_1 # recompute after the call
+    - referred_in: []
+    - dies_in:
+      - *_f_try_if_1_header_0
+    - across_funcall: false
+    - alloc:
+      - reg: t0 # use once and discard
+      - stack: null
+
+  - diag1_body: &_diag1_body
+    - defined_in: # la  t2, arr_diag1_body
+      # or, use gp on bss, and `addi t2, gp, <offset>`
+      - *_f_try_if_2_header_0
+      - *_f_try_if_body_1
+    - referred_in:
+      - *_f_try_if_body_1
+    - dies_in:
+      - *_f_try_if_body_1
+    - across_funcall: true
+    - alloc:
+      - reg: t1 # use and discard
+      - stack: null
+
+  - _t_diag1_rc_mem: &_t_diag1_rc_mem
+    - defined_in:
+      - *_f_try_if_1_header_0
+      - *_f_try_if_body_1 # recompute after the call
+    - referred_in:
+      - *_f_try_if_body_1
+    - dies_in:
+      - *_f_try_if_body_1
+    - across_funcall: true
+    - alloc:
+      - reg: t5 # reuse once in body before funcall
+      - stack: null
+
+  - _t_diag1_rc_val: &_t_diag1_rc_val
+    - defined_in:
+      - *_f_try_if_1_header_0
+    - referred_in: []
+    - dies_in:
+      - *_f_try_if_1_header_0
+    - across_funcall: false
+    - alloc:
+      - reg: t0 # use once and discard
+      - stack: null
+
+  # suite for diag2[r-c+7]
+  # which is reused in the body, recompute after the call.
+  - _t_rmc: &_t_rmc # r-c
+    - defined_in:
+      - *_f_try_if_3_header_0
+      - *_f_try_if_body_1 # recompute after the call
+    - referred_in: []
+    - dies_in:
+      - *_f_try_if_3_header_0
+      - *_f_try_if_body_1
+    - across_funcall: false
+    - alloc:
+      - reg: t0 # use once and discard
+      - stack: null
+
+  - _t_rp7mc: &_t_rp7mc # r+7-c
+    - defined_in:
+      - *_f_try_if_3_header_0
+      - *_f_try_if_body_1 # recompute after the call
+    - referred_in: []
+    - dies_in:
+      - *_f_try_if_3_header_0
+      - *_f_try_if_body_1
+    - across_funcall: false
+    - alloc:
+      - reg: t0 # use once and discard
+      - stack: null
+
+  - _t_diag2_rp7mc_offset: &_t_diag2_rp7mc_offset
+    - defined_in:
+      - *_f_try_if_3_header_0
+      - *_f_try_if_body_1 # recompute after the call
+    - referred_in: []
+    - dies_in:
+      - *_f_try_if_3_header_0
+      - *_f_try_if_body_1
+    - across_funcall: false
+    - alloc:
+      - reg: t0 # use once and discard
+      - stack: null
+
+  - diag2_body: &_diag2_body
+    - defined_in: # la  t3, arr_diag2_body
+      # or, use gp on bss, and `addi t3, gp, <offset>`
+      - *_f_try_if_3_header_0
+      - *_f_try_if_body_1
+    - referred_in:
+      - *_f_try_if_body_1
+    - dies_in:
+      - *_f_try_if_body_1
+    - across_funcall: true
+    - alloc:
+      - reg: t1 # use and discard
+      - stack: null
+
+  - _t_diag2_rp7mc_mem: &_t_diag2_rp7mc_mem
+    - defined_in:
+      - *_f_try_if_3_header_0
+      - *_f_try_if_body_1 # recompute after the call
+    - referred_in:
+      - *_f_try_if_body_1
+    - dies_in:
+      - *_f_try_if_body_1
+    - across_funcall: true
+    - alloc:
+      - reg: t4 # reuse once in body before funcall
+      - stack: null
+  
+  # now do things in `_f_try_if_body_1`
+  # suite for col[c]
+  - _t_col_c_offset: &_t_col_c_offset
+    - defined_in:
+      - *_f_try_if_body_1
+    - referred_in: []
+    - dies_in:
+      - *_f_try_if_body_1
+    - across_funcall: false
+    - alloc:
+      - reg: t0
+      - stack: null
+
+  - col_body: &_col_body
+    - defined_in: # la  t1, arr_col_body
+      # or, use gp on bss, and `addi t1, gp, <offset>`
+      - *_f_try_if_body_1
+    - referred_in:
+      - *_f_try_if_body_1
+    - dies_in:
+      - *_f_try_if_body_1
+    - across_funcall: true
+    - alloc:
+      - reg: t1 # use and discard
+      - stack: null
+
+  - _t_col_c_mem: &_t_col_c_mem
+    - defined_in:
+      - *_f_try_if_body_1
+    - referred_in:
+      - *_f_try_if_body_1
+    - dies_in:
+      - *_f_try_if_body_1
+    - across_funcall: true
+    - alloc:
+      - reg: t6 # reuse once in body before funcall
+      - stack: null
+
+  - _t_try_cp1: &_t_try_cp1 # c <- c+1
+    - defined_in:
+      - *_f_try_if_body_1
+    - referred_in:
+      - *_f_try_if_body_1
+    - dies_in:
+      - *_f_try_if_body_1
+    - across_funcall: true
+    - alloc:
+      - reg: a0 # to call try(c+1)
+      - stack: null
+
+# done
