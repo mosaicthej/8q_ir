@@ -1,0 +1,47 @@
+Rule:
+
+1.
+For pattern:
+
+```ir
+  MOVE(temp X, ROP(temp A, RltOp, temp B));
+  CJUMP(temp X, L1, L2);
+```
+
+Unless temp X is referenced somewhere else
+  Do not allocate a register for temp X.
+  These two can usually combine into one of the
+  cjump in riscv.
+
+2.
+global consts.
+
+Since this is accessed very often and the value
+  does not change (when declared as const).
+
+Since a CONST can't be a lval, it is either
+  a) compared with a temp
+    For comparsion against the temp in a CJUMP:
+      (optimize for less instructions)
+    - if there are enough registers left in the pool:
+        use a *free* register to load the CONST
+        then perform CJUMP.
+        The temp will only be alive for the CJUMP.
+
+      (optimize for less register usage, which,
+      substantially reduces the number of instructions)
+    - depending on the context, the temp can be modified
+      with the CONST in a i-type instruction.
+      Should the temp be restored (1 extra instruction)
+        will be depending on if the temp is used again.   
+
+  b) used as a member in BINOP.
+    This can be done with just use an i-type instruction
+    (unless when it's too large, then use a register)
+
+    This is also true for commonly used values such as
+    ONE, TWO, THREE, FOUR in codegen.
+
+3.
+i would assume arrays as const that is already existed
+  in the `.data` section.
