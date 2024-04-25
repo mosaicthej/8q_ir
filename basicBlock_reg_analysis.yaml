@@ -99,6 +99,7 @@
       - *_t_row_r_offset
       - *row_body
       - *_t_row_r_mem 
+      - *_t_rc
       - *_t_diag1_rc_offset 
       - *diag1_body
       - *_t_diag1_rc_mem
