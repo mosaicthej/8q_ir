@@ -88,6 +88,18 @@
       # - _t_diag1_rc_mem
       # - _t_diag2_rp7mc_mem
       # will need to be accessed after the call returned.
+      # change of the plan!!
+      # those three memory addresses will be 
+      #  recomputated after the funcall.
+      #  as it's cheaper to recompute than push to stack.
+      - *_t_row_r_offset 
+      - *_t_row_r_mem 
+      - *_t_diag1_rc_offset 
+      - *_t_diag1_rc_mem 
+      - *_t_rmc
+      - *_t_rp7mc 
+      - *_t_diag2_rp7mc_offset 
+      - *_t_diag2_rp7mc_mem 
     - refers:
       - *_t_try_r_0
       - *_t_try_arg_c
