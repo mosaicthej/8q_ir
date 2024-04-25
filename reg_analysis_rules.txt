@@ -55,4 +55,14 @@ If array size is known at compile time,
   assume we allocate them in the `.data` section instead 
   of dynamically allocating them.
 
+Subsequently, the temps associated with the arrays will
+  not be allocated a register, they will just be used as
+  immediate values.
+
+the arrays should be allocated this way:
+- word-aligned
+- name of the array: this is the header, leave a word of space.
+- the array itself: this is the body, leave a word of space.
+- the array body: how much ever the space it needs.
+
 
