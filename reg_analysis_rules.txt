@@ -51,3 +51,8 @@ The hot registers will be noted in beginning of the codegen.
 Or, they can just be referred directly as immediate values
 (assembler will take care of it).
 
+If array size is known at compile time, 
+  assume we allocate them in the `.data` section instead 
+  of dynamically allocating them.
+
+
