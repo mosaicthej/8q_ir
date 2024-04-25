@@ -1,0 +1,131 @@
+- basicBlocks:
+  - _f_try_if_0_header: &_f_try_if_0_header
+    - defines: []
+    - refers:
+      - *_t_try_arg_c
+    - enterfrom: 
+      - ENTRY
+    - endwith:
+      CJUMP:
+        - *_f_try_if_0_then
+        - *_f_try_if_0_else
+
+  - _f_try_if_0_else: &_f_try_if_0_else
+    - defines:
+      - *_t_try_r_0
+    - refers: []
+    - enterfrom: 
+      - *_f_try_if_0_header
+    - endwith:
+      JUMP: *_f_try_loop_test_0
+
+  - _f_try_loop_test_0: &_f_try_loop_test_0
+    - defines: []
+    - refers:
+      - *_t_try_r_0
+    - enterfrom: 
+      - *_f_try_if_0_else
+      - *_f_try_if_fin_1
+    - endwith:
+      CJUMP:
+        - *_f_try_fn_end
+        - *_f_try_if_1_header_0
+
+  - _f_try_if_1_header_0: &_f_try_if_1_header_0
+    - defines:
+      - *_t_row_r_offset # this does not live outside of the BB
+      - *_t_row_r_mem # this should be cached in a register
+      - *_t_row_r_val # this does not live outside fo the BB
+    - refers: # does not count for temps defined in BB
+      - *_t_try_r_0
+    - enterfrom: 
+      - *_f_try_loop_test_0
+    - endwith:
+      CJUMP:
+      - *_f_try_if_2_header_0
+      - *_f_try_if_fin_1
+
+  - _f_try_if_2_header_0: &_f_try_if_2_header_0
+    - defines:
+      - *_t_rc # dies in BB
+      - *_t_diag1_rc_offset # dies in BB
+      - *_t_diag1_rc_mem # will be used later
+      - *_t_diag1_rc_val # dies in BB
+    - refers:
+      - *_t_try_r_0
+      - *_t_try_arg_c
+    - enterfrom: 
+      - *_f_try_if_1_header_0
+    - endwith:
+      CJUMP:
+      - *_f_try_if_3_header_0
+      - *_f_try_if_fin_1
+
+  - _f_try_if_3_header_0: &_f_try_if_3_header_0
+    - defines:
+      - *_t_rmc # dies in BB
+      - *_t_rp7mc # dies in BB
+      - *_t_diag2_rp7mc_offset # dies in BB
+      - *_t_diag2_rp7mc_mem # will be used later
+      - *_t_diag2_rp7mc_val # dies in BB
+    - refers:
+      - *_t_try_r_0
+      - *_t_try_arg_c
+    - enterfrom: 
+      - *_f_try_if_2_header_0
+    - endwith:
+      CJUMP:
+      - *_f_try_if_body_1
+      - *_f_try_if_fin_1
+
+  - _f_try_if_body_1: &_f_try_if_body_1
+    - defines:
+      - *_t_col_c_offset # dies right after
+      - *_t_col_c_mem # dies right after
+      - *_t_try_cp1 # for argument to call itself.
+      # note that only:
+      # - _t_row_r_mem
+      # - _t_diag1_rc_mem
+      # - _t_diag2_rp7mc_mem
+      # will need to be accessed after the call returned.
+    - refers:
+      - *_t_try_r_0
+      - *_t_try_arg_c
+      - *_t_row_r_mem
+      - *_t_diag1_rc_mem
+      - *_t_diag2_rp7mc_mem
+    - enterfrom:
+      - *_f_try_if_3_header_0
+    - endwith:
+      JUMP: *_f_try_if_fin_1
+
+  - _f_try_if_fin_1: &_f_try_if_fin_1
+    - defines:
+      - *_t_try_r_0
+    - refers:
+      - *_t_try_r_0
+    - enterfrom:
+      - *_f_try_if_1_header_0
+      - *_f_try_if_2_header_0
+      - *_f_try_if_3_header_0
+      - *_f_try_if_body_1
+    - endwith:
+      JUMP: *_f_try_loop_test_0
+
+  - _f_try_if_0_then: &_f_try_if_0_then
+    - defines: []
+    - refers: []
+    - enterfrom: 
+      - *_f_try_if_0_header
+    - endwith:
+      JUMP: *_f_try_fn_end
+
+  - _f_try_fn_end: &_f_try_fn_end # postamble and return
+    - defines: []
+    - refers: []
+    - enterfrom:
+      - *_f_try_if_0_then
+      - *_f_try_loop_test_0
+    - endwith:
+      JUMP: __SECRET_INTERNAL_DONT_SET_THIS_OR_YOU_WILL_BE_FIRED
+      # it is ra register.
