@@ -1,0 +1,158 @@
+  (* assume temp _arg_c is passed in *)
+  (* fn preambles *)
+(label "_f_try_preamble", [
+  MOVE(temp "ZERO", BINOP(temp "ZERO", OR, temp "ZERO"));
+  JUMP(label "_f_try_if_0_header")
+]);
+(* if (c==N) *)
+(label "_f_try_if_0_header", [
+  MOVE(temp "_t_try_if_0_test",
+    ROP(temp "_t_try_arg_c", EQ, temp "N"));
+  CJUMP(temp "_t_try_if_0_test",
+    label "_f_try_if_0_then",
+    label "_f_try_if_0_else")
+]);
+(* then *)
+(label "_f_try_if_0_then", [
+  CALL(label "_func_printBoard", [], []);
+  JUMP(label "_f_try_if_0_fi")
+]);
+(* if_0 fi *)
+(label "_f_try_if_0_fi", [
+  MOVE(temp "ZERO", BINOP(temp "ZERO", OR, temp "ZERO"));
+  JUMP(label "_f_try_fn_end")
+]);
+(* else *)
+(label "_f_try_if_0_else", [
+  MOVE(temp "_t_try_r_0", CONST(0));
+  JUMP(label "_f_try_loop_first_0")
+]);
+(* loop *)
+(label "_f_try_loop_first_0", [
+  MOVE(temp "_t_try_loop_test_0",
+    ROP(temp "_t_try_r_0", LT, temp "N"));
+  CJUMP(temp "_t_try_loop_test_0",
+    label "_f_try_loop_body_0",
+    label "_f_try_loop_fi_0")
+  ]);
+(* loop test *)
+(label "_f_try_loop_test_0", [
+  MOVE(temp "_t_try_loop_test_0",
+    ROP(temp "_t_try_r_0", LT, temp "N"));
+  CJUMP(temp "_t_try_loop_test_0",
+    label "_f_try_loop_body_0",
+    label "_f_try_loop_fi_0")
+  ]);
+(* loop fi *)
+(label "_f_try_loop_fi_0", [
+  MOVE(temp "ZERO", BINOP(temp "ZERO", OR, temp "ZERO"));
+  JUMP(label "_f_try_if_0_fi")
+]);
+
+(* loop body *)
+(label "_f_try_loop_body_0" [
+  MOVE(temp "zero", BINOP(temp "ZERO", OR, temp "ZERO"));
+  JUMP(label "_f_try_if_1_header_0")
+]);
+
+(* loop last *)
+(label "_f_try_loop_last_0", [
+  MOVE(temp "_t_try_r_0",
+    BINOP(temp "_t_try_r_0", PLUS, temp "ONE"));
+  JUMP(label "_f_try_loop_test_0")
+]);
+
+(* if 1: !row[r] *)
+(label "_f_try_if_1_header_0"[
+  MOVE(temp "_t_row_r_offset",
+    BINOP(temp "_t_try_r_0", SHL, temp "THREE"));
+  MOVE(temp "_t_row_r_mem",
+    BINOP(temp "row_body", PLUS, temp "_t_row_r_offset"));
+  LOAD(temp "_t_row_r_val", temp "_t_row_r_mem");
+  MOVE(temp "_f_try_if_1_cond_0",
+    ROP(temp "_t_row_r_val", NEQ, temp "ZERO"));
+  CJUMP(temp "_f_try_if_1_cond_0",
+    label "_f_try_if_2_header_0",
+    label "_f_try_if_fin_1")
+]);
+
+(* if 2: !diag1[r+c] *)
+(label "_f_try_if_2_header_0", [
+  MOVE(temp "_t_rc",
+    BINOP(temp "_t_try_r_0", PLUS, temp "_t_try_arg_c"));
+  MOVE(temp "_t_diag1_rc_offset",
+    BINOP(temp "_t_rc", SHL, temp "THREE"));
+  MOVE(temp "_t_diag1_rc_mem",
+    BINOP(temp "_t_diag1_rc_offset", PLUS, temp "diag1_body"));
+  LOAD(temp "_t_diag1_rc_val", temp "_t_diag1_rc_mem");
+  MOVE(temp "_f_try_if_2_test_0",
+    ROP(temp "_t_diag1_rc_val", NEQ, temp "ZERO"));
+  CJUMP(temp "_t_diag1_rc_val",
+    label "_f_try_if_3_header_0",
+    label "_f_try_if_fin_1")]);
+
+(* if 3: !diag2[r+7-c] *)
+(label "_f_try_if_3_header_0", [
+  MOVE(temp "_t_rmc",
+    BINOP(temp "_t_try_r_0" MINUS, temp "_t_try_arg_c"));
+  MOVE(temp "_t_rp7mc",
+    BINOP(temp "_t_rmc" PLUS, temp "SEVEN"));
+  MOVE(temp "_t_diag2_rp7mc_offset",
+    BINOP(temp "_t_rp7mc", SHL, temp "THREE"));
+  MOVE(temp "_t_diag2_rp7mc_mem",
+    BINOP(temp "_t_diag2_rp7mc_offset", PLUS, temp "diag2_body"));
+  LOAD(temp "_t_diag2_rp7mc_val", temp "_t_diag2_rp7mc_mem");
+  MOVE(temp "_f_try_if_3_test_0",
+    ROP(temp "_t_diag2_rp7mc_val", NEQ, temp "ZERO"));
+  CJUMP(temp "_f_try_if_3_test_0",
+    label "_f_try_if_body_1",
+    label "_f_try_if_fin_1")]);
+
+
+(* if body *)
+(label "_f_try_if_body_1", [
+  (* row[r] = true *)
+  STORE(temp "_t_row_r_mem", temp "ONE");
+  (* diag1[r+c] = true *)
+  STORE(temp "_t_diag1_rc_mem", temp "ONE");
+  (* diag2[r+7-c] = true *)
+  STORE(temp "_t_diag2_rp7mc_mem", temp "ONE");
+  (* col[c] = r *)
+  MOVE(temp "_t_col_c_offset",
+    BINOP(temp "_t_try_arg_c", SHL, temp "THREE"));
+  MOVE(temp "_t_col_c_mem",
+    BINOP(temp "col_body", PLUS, temp "_t_col_c_offset"));
+  STORE(temp "_t_col_c_mem", temp "_t_try_r_0");
+  (* try(c+1) *)
+  MOVE(temp "_t_try_cp1",
+    BINOP(temp "_t_try_arg_c", PLUS, temp "ONE"));
+  CALL(label "_func_try", 
+    [temp "_t_try_cp1"], []);
+
+  (* row[r] = false *)
+  STORE(temp "_t_row_r_mem", temp "ZERO");
+  (* diag1[r+c] = false *)
+  STORE(temp "_t_diag1_rc_mem", temp "ZERO");
+  (* diag2[r+7-c] = false *)
+  STORE(temp "_t_diag2_rp7mc_mem", temp "ZERO");
+  JUMP(label "_f_try_if_fin_1")]);
+
+
+
+(* if fin 1 *)(* jump to f_try_loop_last_0 *)
+(label "_f_try_if_fin_1", [
+  MOVE(temp "ZERO", BINOP(temp "ZERO", OR, temp "ZERO"));
+  JUMP(label "_f_try_loop_last_0")
+]);
+
+(* fn try fn end *) (* view-unshift and return *)
+(label "_f_try_fn_end", [
+  MOVE(temp "ZERO", BINOP(temp "ZERO", OR, temp "ZERO"));
+  JUMP(label "%__SECRET_INTERNAL_DONT_SET_THIS_OR_YOU_WILL_BE_FIRED")
+]);
+(* end of try *)
+
+
+(* 
+  not too bad, only 16 BBs. looks manageable
+*)

@@ -962,7 +962,7 @@ func try (c int) {
     JUMP(label "%__SECRET_INTERNAL_DONT_SET_THIS_OR_YOU_WILL_BE_FIRED")
   ]);
   (* end of try *)
-  ]
+]);
 
 
 ] (* end ircode *)
