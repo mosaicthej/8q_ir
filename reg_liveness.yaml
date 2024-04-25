@@ -15,6 +15,21 @@
       - reg: a0
       - stack: fp-4
 
+  - _t_N: &_t_N
+    - defined_in:
+      - _f_try_if_0_header
+    - referred_in:
+      - _f_try_loop_test_0
+    - dies_in:
+      - _f_try_loop_test_0
+      - _f_try_if_0_header
+    - across_funcall: false
+    - alloc:
+      - reg: t3
+      - stack: null
+
+
+  
   - _t_try_r_0: &_t_try_r_0
     - defined_in:
       - *_f_try_if_0_else
@@ -115,7 +130,7 @@
       - stack: null
 
   - diag1_body: &_diag1_body
-    - defined_in: # la  t2, arr_diag1_body
+    - defined_in: # la  t1, arr_diag1_body
       # or, use gp on bss, and `addi t2, gp, <offset>`
       - *_f_try_if_2_header_0
       - *_f_try_if_body_1
@@ -194,7 +209,7 @@
       - stack: null
 
   - diag2_body: &_diag2_body
-    - defined_in: # la  t3, arr_diag2_body
+    - defined_in: # la  t1, arr_diag2_body
       # or, use gp on bss, and `addi t3, gp, <offset>`
       - *_f_try_if_3_header_0
       - *_f_try_if_body_1

@@ -30,6 +30,8 @@ Since a CONST can't be a lval, it is either
 
       (optimize for less register usage, which,
       substantially reduces the number of instructions)
+      Also, as register pressure increases,
+        the temps for CONST should be first to evict.
     - depending on the context, the temp can be modified
       with the CONST in a i-type instruction.
       Should the temp be restored (1 extra instruction)
