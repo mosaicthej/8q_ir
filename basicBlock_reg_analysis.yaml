@@ -33,8 +33,7 @@
 
   - _f_try_if_1_header_0: &_f_try_if_1_header_0
     - defines:
-      - *_t_row_r_offset # this does not live outside of the BB
-      - *_t_row_r_mem # this should be cached in a register
+      - *_t_row_r_offset # reuse in body
       - *_t_row_r_val # this does not live outside fo the BB
     - refers: # does not count for temps defined in BB
       - *_t_try_r_0
@@ -48,8 +47,7 @@
   - _f_try_if_2_header_0: &_f_try_if_2_header_0
     - defines:
       - *_t_rc # dies in BB
-      - *_t_diag1_rc_offset # dies in BB
-      - *_t_diag1_rc_mem # will be used later
+      - *_t_diag1_rc_offset # reuse in body
       - *_t_diag1_rc_val # dies in BB
     - refers:
       - *_t_try_r_0
@@ -65,8 +63,7 @@
     - defines:
       - *_t_rmc # dies in BB
       - *_t_rp7mc # dies in BB
-      - *_t_diag2_rp7mc_offset # dies in BB
-      - *_t_diag2_rp7mc_mem # will be used later
+      - *_t_diag2_rp7mc_offset # used in body
       - *_t_diag2_rp7mc_val # dies in BB
     - refers:
       - *_t_try_r_0
@@ -81,31 +78,27 @@
   - _f_try_if_body_1: &_f_try_if_body_1
     - defines:
       - *_t_col_c_offset # dies right after
-      - *_t_col_c_mem # dies right after
       - *_t_try_cp1 # for argument to call itself.
       # note that only:
-      # - _t_row_r_mem
-      # - _t_diag1_rc_mem
-      # - _t_diag2_rp7mc_mem
+      # - _t_row_r_offset
+      # - _t_diag1_rc_offset
+      # - _t_diag2_rp7mc_offset
       # will need to be accessed after the call returned.
       # change of the plan!!
       # those three memory addresses will be 
       #  recomputated after the funcall.
       #  as it's cheaper to recompute than push to stack.
       - *_t_row_r_offset 
-      - *_t_row_r_mem 
       - *_t_diag1_rc_offset 
-      - *_t_diag1_rc_mem 
       - *_t_rmc
       - *_t_rp7mc 
       - *_t_diag2_rp7mc_offset 
-      - *_t_diag2_rp7mc_mem 
     - refers:
       - *_t_try_r_0
       - *_t_try_arg_c
-      - *_t_row_r_mem
-      - *_t_diag1_rc_mem
-      - *_t_diag2_rp7mc_mem
+      - *_t_row_r_offset
+      - *_t_diag1_rc_offset
+      - *_t_diag2_rp7mc_offset
     - enterfrom:
       - *_f_try_if_3_header_0
     - endwith:

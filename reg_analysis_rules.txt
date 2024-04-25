@@ -65,4 +65,25 @@ the arrays should be allocated this way:
 - the array itself: this is the body, leave a word of space.
 - the array body: how much ever the space it needs.
 
+```asm
+.data
+
+.align 2 # word-aligned
+arr_row: .word 8 # header (const N)
+arr_row_body: .space 32 # this is pre-computed.
+...
+```
+
+Thus, there is no need to add base address and the offset
+  separately, just do this would suffice:
+
+```asm
+.text
+...
+# assume t6 <-> r
+...
+slli  t1, t6, 2 # to access row[r],
+lw t0, arr_row(t1) # t1 is the offset.
+...
+```
 
