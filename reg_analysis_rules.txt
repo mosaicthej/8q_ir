@@ -48,4 +48,6 @@ i would assume arrays as const that is already existed
 
 Their addresses will be saved in a register if they are hot.
 The hot registers will be noted in beginning of the codegen.
+Or, they can just be referred directly as immediate values
+(assembler will take care of it).
 
